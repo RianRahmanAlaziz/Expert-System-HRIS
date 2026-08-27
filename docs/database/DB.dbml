@@ -1,0 +1,480 @@
+Project HRIS_Expert_System {
+  database_type: "MySQL"
+  Note: "Enterprise HRIS + Rule-Based Expert System"
+}
+
+Table users {
+  id bigint [pk, increment]
+  name varchar(255)
+  email varchar(255) [unique]
+  email_verified_at timestamp [null]
+  password varchar(255)
+  remember_token varchar(100) [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table roles {
+  id bigint [pk, increment]
+  name varchar(255)
+  guard_name varchar(255)
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (name, guard_name) [unique]
+  }
+}
+
+Table permissions {
+  id bigint [pk, increment]
+  name varchar(255)
+  guard_name varchar(255)
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (name, guard_name) [unique]
+  }
+}
+
+Table model_has_roles {
+  role_id bigint
+  model_type varchar(255)
+  model_id bigint
+
+  indexes {
+    (role_id, model_id, model_type) [pk]
+  }
+}
+
+Table model_has_permissions {
+  permission_id bigint
+  model_type varchar(255)
+  model_id bigint
+
+  indexes {
+    (permission_id, model_id, model_type) [pk]
+  }
+}
+
+Table role_has_permissions {
+  permission_id bigint
+  role_id bigint
+
+  indexes {
+    (permission_id, role_id) [pk]
+  }
+}
+
+Table departments {
+  id bigint [pk, increment]
+  code varchar(50) [unique]
+  name varchar(150)
+  description text [null]
+  status varchar(30)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table positions {
+  id bigint [pk, increment]
+  code varchar(50) [unique]
+  name varchar(150)
+  description text [null]
+  level int [default: 1]
+  status varchar(30)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table employees {
+  id bigint [pk, increment]
+  user_id bigint [unique, null]
+  department_id bigint
+  position_id bigint
+  manager_id bigint [null]
+  employee_number varchar(50) [unique]
+  first_name varchar(100)
+  last_name varchar(100) [null]
+  gender varchar(20)
+  birth_date date [null]
+  phone varchar(30) [null]
+  address text [null]
+  join_date date
+  employment_type varchar(50)
+  employment_status varchar(50)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table attendances {
+  id bigint [pk, increment]
+  employee_id bigint
+  attendance_date date
+  clock_in datetime [null]
+  clock_out datetime [null]
+  status varchar(30)
+  late_minutes int [default: 0]
+  working_minutes int [default: 0]
+  notes text [null]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (employee_id, attendance_date) [unique]
+  }
+}
+
+Table leave_types {
+  id bigint [pk, increment]
+  name varchar(100)
+  code varchar(50) [unique]
+  default_days int [default: 0]
+  description text [null]
+  status varchar(30)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table leave_requests {
+  id bigint [pk, increment]
+  employee_id bigint
+  leave_type_id bigint
+  start_date date
+  end_date date
+  total_days decimal(5,2)
+  reason text
+  status varchar(30)
+  approved_by bigint [null]
+  approved_at timestamp [null]
+  rejection_reason text [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table performance_periods {
+  id bigint [pk, increment]
+  name varchar(150)
+  start_date date
+  end_date date
+  status varchar(30)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table performance_indicators {
+  id bigint [pk, increment]
+  code varchar(50) [unique]
+  name varchar(150)
+  description text [null]
+  weight decimal(5,2)
+  target decimal(10,2) [null]
+  unit varchar(50) [null]
+  status varchar(30)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table performance_reviews {
+  id bigint [pk, increment]
+  employee_id bigint
+  performance_period_id bigint
+  reviewer_id bigint
+  overall_score decimal(5,2) [null]
+  rating varchar(50) [null]
+  comments text [null]
+  status varchar(30)
+  reviewed_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (employee_id, performance_period_id) [unique]
+  }
+}
+
+Table performance_review_items {
+  id bigint [pk, increment]
+  performance_review_id bigint
+  performance_indicator_id bigint
+  score decimal(5,2)
+  target_value decimal(10,2) [null]
+  actual_value decimal(10,2) [null]
+  comments text [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table competencies {
+  id bigint [pk, increment]
+  code varchar(50) [unique]
+  name varchar(150)
+  category varchar(100)
+  description text [null]
+  status varchar(30)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table competency_levels {
+  id bigint [pk, increment]
+  level int [unique]
+  name varchar(100)
+  description text [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table employee_competencies {
+  id bigint [pk, increment]
+  employee_id bigint
+  competency_id bigint
+  competency_level_id bigint
+  score decimal(5,2) [null]
+  assessed_at date [null]
+  assessed_by bigint [null]
+  notes text [null]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (employee_id, competency_id) [unique]
+  }
+}
+
+Table trainings {
+  id bigint [pk, increment]
+  code varchar(50) [unique]
+  name varchar(200)
+  category varchar(100)
+  description text [null]
+  trainer varchar(150) [null]
+  start_date date
+  end_date date
+  capacity int [null]
+  status varchar(30)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table training_participants {
+  id bigint [pk, increment]
+  training_id bigint
+  employee_id bigint
+  status varchar(30)
+  score decimal(5,2) [null]
+  registered_at timestamp [null]
+  completed_at timestamp [null]
+  certificate_path varchar(500) [null]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (training_id, employee_id) [unique]
+  }
+}
+
+Table knowledge_categories {
+  id bigint [pk, increment]
+  name varchar(100)
+  code varchar(50) [unique]
+  description text [null]
+  status varchar(30)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table knowledges {
+  id bigint [pk, increment]
+  knowledge_category_id bigint
+  title varchar(200)
+  description text
+  version int [default: 1]
+  status varchar(30)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table expert_rules {
+  id bigint [pk, increment]
+  knowledge_id bigint
+  code varchar(50) [unique]
+  name varchar(200)
+  description text [null]
+  priority int [default: 0]
+  status varchar(30)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table rule_conditions {
+  id bigint [pk, increment]
+  expert_rule_id bigint
+  parameter varchar(100)
+  operator varchar(20)
+  value varchar(255)
+  logical_operator varchar(10) [null]
+  sort_order int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table rule_actions {
+  id bigint [pk, increment]
+  expert_rule_id bigint
+  action_type varchar(50)
+  action_value varchar(255)
+  description text [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table expert_consultations {
+  id bigint [pk, increment]
+  employee_id bigint
+  user_id bigint
+  consultation_type varchar(100)
+  status varchar(30)
+  started_at timestamp
+  completed_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table consultation_results {
+  id bigint [pk, increment]
+  expert_consultation_id bigint
+  recommendation varchar(255)
+  score decimal(5,2) [null]
+  confidence decimal(5,2) [null]
+  reason text [null]
+  input_snapshot json [null]
+  matched_rules json [null]
+  suggested_actions json [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table notifications {
+  id bigint [pk, increment]
+  user_id bigint
+  type varchar(100)
+  title varchar(255)
+  message text
+  read_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table activity_logs {
+  id bigint [pk, increment]
+  user_id bigint [null]
+  action varchar(100)
+  module varchar(100)
+  target_type varchar(100) [null]
+  target_id bigint [null]
+  old_values json [null]
+  new_values json [null]
+  ip_address varchar(45) [null]
+  user_agent text [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Ref: model_has_roles.role_id > roles.id
+Ref: model_has_permissions.permission_id > permissions.id
+Ref: role_has_permissions.permission_id > permissions.id
+Ref: role_has_permissions.role_id > roles.id
+
+Ref: employees.user_id - users.id
+Ref: employees.department_id > departments.id
+Ref: employees.position_id > positions.id
+Ref: employees.manager_id > employees.id
+
+Ref: attendances.employee_id > employees.id
+
+Ref: leave_requests.employee_id > employees.id
+Ref: leave_requests.leave_type_id > leave_types.id
+Ref: leave_requests.approved_by > users.id
+
+Ref: performance_reviews.employee_id > employees.id
+Ref: performance_reviews.performance_period_id > performance_periods.id
+Ref: performance_reviews.reviewer_id > users.id
+
+Ref: performance_review_items.performance_review_id > performance_reviews.id
+Ref: performance_review_items.performance_indicator_id > performance_indicators.id
+
+Ref: employee_competencies.employee_id > employees.id
+Ref: employee_competencies.competency_id > competencies.id
+Ref: employee_competencies.competency_level_id > competency_levels.id
+Ref: employee_competencies.assessed_by > users.id
+
+Ref: training_participants.training_id > trainings.id
+Ref: training_participants.employee_id > employees.id
+
+Ref: knowledges.knowledge_category_id > knowledge_categories.id
+Ref: expert_rules.knowledge_id > knowledges.id
+Ref: rule_conditions.expert_rule_id > expert_rules.id
+Ref: rule_actions.expert_rule_id > expert_rules.id
+
+Ref: expert_consultations.employee_id > employees.id
+Ref: expert_consultations.user_id > users.id
+Ref: consultation_results.expert_consultation_id - expert_consultations.id
+
+Ref: notifications.user_id > users.id
+Ref: activity_logs.user_id > users.id
+
+TableGroup "AUTH" {
+  users
+  roles
+  permissions
+  model_has_roles
+  model_has_permissions
+  role_has_permissions
+}
+
+TableGroup "ORGANIZATION" {
+  departments
+  positions
+  employees
+}
+
+TableGroup "ATTENDANCE & LEAVE" {
+  attendances
+  leave_types
+  leave_requests
+}
+
+TableGroup "PERFORMANCE" {
+  performance_periods
+  performance_indicators
+  performance_reviews
+  performance_review_items
+}
+
+TableGroup "COMPETENCY" {
+  competencies
+  competency_levels
+  employee_competencies
+}
+
+TableGroup "TRAINING" {
+  trainings
+  training_participants
+}
+
+TableGroup "EXPERT SYSTEM" {
+  knowledge_categories
+  knowledges
+  expert_rules
+  rule_conditions
+  rule_actions
+  expert_consultations
+  consultation_results
+}
+
+TableGroup "SYSTEM" {
+  notifications
+  activity_logs
+}
