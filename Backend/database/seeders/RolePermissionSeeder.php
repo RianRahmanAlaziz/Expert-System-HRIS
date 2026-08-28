@@ -29,6 +29,17 @@ class RolePermissionSeeder extends Seeder
             'role.delete',
             // Permission
             'permission.view',
+            // Department
+            'department.view',
+            'department.create',
+            'department.update',
+            'department.delete',
+
+            // Position
+            'position.view',
+            'position.create',
+            'position.update',
+            'position.delete',
         ];
 
         foreach ($permissions as $permission) {
@@ -72,6 +83,15 @@ class RolePermissionSeeder extends Seeder
             'user.update',
             'role.view',
             'permission.view',
+            'department.view',
+            'department.create',
+            'department.update',
+            'department.delete',
+
+            'position.view',
+            'position.create',
+            'position.update',
+            'position.delete',
         ]);
 
         $manager->syncPermissions([
