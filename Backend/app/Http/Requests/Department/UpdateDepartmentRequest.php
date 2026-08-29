@@ -50,4 +50,23 @@ class UpdateDepartmentRequest extends FormRequest
             ],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'code.string' => 'Kode department harus berupa teks.',
+            'code.max' => 'Kode department maksimal 50 karakter.',
+            'code.unique' => 'Kode department sudah digunakan.',
+
+            'name.string' => 'Nama department harus berupa teks.',
+            'name.max' => 'Nama department maksimal 150 karakter.',
+
+            'description.string' => 'Deskripsi department harus berupa teks.',
+
+            'status.string' => 'Status department harus berupa teks.',
+            'status.max' => 'Status department maksimal 30 karakter.',
+
+            'is_active.boolean' => 'Status aktif harus berupa boolean.',
+        ];
+    }
 }

@@ -49,4 +49,26 @@ class StoreDepartmentRequest extends FormRequest
             ],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'code.required' => 'Kode department wajib diisi.',
+            'code.string' => 'Kode department harus berupa teks.',
+            'code.max' => 'Kode department maksimal 50 karakter.',
+            'code.unique' => 'Kode department sudah digunakan.',
+
+            'name.required' => 'Nama department wajib diisi.',
+            'name.string' => 'Nama department harus berupa teks.',
+            'name.max' => 'Nama department maksimal 150 karakter.',
+
+            'description.string' => 'Deskripsi department harus berupa teks.',
+
+            'status.required' => 'Status department wajib diisi.',
+            'status.string' => 'Status department harus berupa teks.',
+            'status.max' => 'Status department maksimal 30 karakter.',
+
+            'is_active.boolean' => 'Status aktif harus berupa boolean.',
+        ];
+    }
 }
