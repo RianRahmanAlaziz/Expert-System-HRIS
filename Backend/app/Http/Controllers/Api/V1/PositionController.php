@@ -22,14 +22,27 @@ class PositionController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $perPage = min(max($request->integer('per_page', 15), 1),  100,);
+        $search = trim((string) $request->query('search', ''));
+
         $position = $this->positionService->paginate(
-            perPage: (int) $request->integer('per_page', 15),
-            search: $request->string('search')->toString(),
+            perPage: $perPage,
+            search: $search,
         );
 
         return ApiResponse::success(
             data: PositionResource::collection($position),
             message: 'Daftar position berhasil diambil.',
+            meta: [
+                'pagination' => [
+                    'current_page' => $position->currentPage(),
+                    'last_page' => $position->lastPage(),
+                    'per_page' => $position->perPage(),
+                    'total' => $position->total(),
+                    'from' => $position->firstItem(),
+                    'to' => $position->lastItem(),
+                ],
+            ],
         );
     }
 

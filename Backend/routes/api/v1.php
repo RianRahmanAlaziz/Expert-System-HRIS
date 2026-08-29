@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\ProfileController;
 use App\Http\Controllers\Api\V1\DepartmentController;
+use App\Http\Controllers\Api\V1\EmployeeController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\PositionController;
@@ -77,4 +78,19 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/positions', [PositionController::class, 'store'])->middleware('permission:position.create');
     Route::put('/positions/{position}', [PositionController::class, 'update'])->middleware('permission:position.update');
     Route::delete('/positions/{position}', [PositionController::class, 'destroy'])->middleware('permission:position.delete');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Employees
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('permission:employee.view')->group(function (): void {
+        Route::get('/employees', [EmployeeController::class, 'index']);
+        Route::get('/employees/{employee}', [EmployeeController::class, 'show']);
+    });
+
+    Route::post('/employees', [EmployeeController::class, 'store'])->middleware('permission:employee.create');
+    Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->middleware('permission:employee.update');
+    Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->middleware('permission:employee.delete');
 });

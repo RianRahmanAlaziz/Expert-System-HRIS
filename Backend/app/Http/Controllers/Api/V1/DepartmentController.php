@@ -22,14 +22,27 @@ class DepartmentController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $perPage = min(max($request->integer('per_page', 15), 1),  100,);
+        $search = trim((string) $request->query('search', ''));
+
         $departments = $this->departmentService->paginate(
-            perPage: (int) $request->integer('per_page', 15),
-            search: $request->string('search')->toString(),
+            perPage: $perPage,
+            search: $search,
         );
 
         return ApiResponse::success(
             data: DepartmentResource::collection($departments),
             message: 'Daftar department berhasil diambil.',
+            meta: [
+                'pagination' => [
+                    'current_page' => $departments->currentPage(),
+                    'last_page' => $departments->lastPage(),
+                    'per_page' => $departments->perPage(),
+                    'total' => $departments->total(),
+                    'from' => $departments->firstItem(),
+                    'to' => $departments->lastItem(),
+                ],
+            ],
         );
     }
 

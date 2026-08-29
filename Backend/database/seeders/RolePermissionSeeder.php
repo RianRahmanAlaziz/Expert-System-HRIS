@@ -40,6 +40,12 @@ class RolePermissionSeeder extends Seeder
             'position.create',
             'position.update',
             'position.delete',
+
+            // Employee
+            'employee.view',
+            'employee.create',
+            'employee.update',
+            'employee.delete',
         ];
 
         foreach ($permissions as $permission) {
@@ -92,14 +98,21 @@ class RolePermissionSeeder extends Seeder
             'position.create',
             'position.update',
             'position.delete',
+
+            'employee.view',
+            'employee.create',
+            'employee.update',
+            'employee.delete',
         ]);
 
         $manager->syncPermissions([
             'user.view',
+            'employee.view',
         ]);
 
         $employee->syncPermissions([
             'user.view',
+            'employee.view',
         ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
