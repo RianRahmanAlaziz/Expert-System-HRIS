@@ -10,6 +10,7 @@ Table users {
   email_verified_at timestamp [null]
   password varchar(255)
   remember_token varchar(100) [null]
+  is_active boolean
   created_at timestamp
   updated_at timestamp
 }
@@ -73,6 +74,7 @@ Table departments {
   name varchar(150)
   description text [null]
   status varchar(30)
+  is_active boolean
   created_at timestamp
   updated_at timestamp
 }
@@ -84,6 +86,7 @@ Table positions {
   description text [null]
   level int [default: 1]
   status varchar(30)
+  is_active boolean
   created_at timestamp
   updated_at timestamp
 }
