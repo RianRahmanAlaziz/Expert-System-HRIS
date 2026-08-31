@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\ProfileController;
 use App\Http\Controllers\Api\V1\DepartmentController;
@@ -93,4 +94,20 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/employees', [EmployeeController::class, 'store'])->middleware('permission:employee.create');
     Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->middleware('permission:employee.update');
     Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->middleware('permission:employee.delete');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/attendances/recap', [AttendanceController::class, 'recap'])->middleware('permission:attendance.view_all');
+    Route::get('/attendances/report', [AttendanceController::class, 'report'])->middleware('permission:attendance.report');
+
+    Route::middleware('permission:attendance.view')->group(function (): void {
+        Route::get('/attendances', [AttendanceController::class, 'index']);
+        Route::get('/attendances/{attendance}', [AttendanceController::class, 'show']);
+    });
+
+    Route::post('/attendances/clock-in', [AttendanceController::class, 'clockIn'])->middleware('permission:attendance.clock_in');
+    Route::post('/attendances/clock-out', [AttendanceController::class, 'clockOut'])->middleware('permission:attendance.clock_out');
 });
