@@ -111,6 +111,21 @@ Table employees {
   updated_at timestamp
 }
 
+Table employment_histories {
+  id bigint [pk, increment]
+  employee_id bigint
+  department_id bigint
+  position_id bigint
+  manager_id bigint [null]
+  employment_type varchar(50)
+  start_date date
+  end_date date [null]
+  reason varchar(255) [null]
+  notes text [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
 Table attendances {
   id bigint [pk, increment]
   employee_id bigint
@@ -412,6 +427,11 @@ Ref: employee_competencies.employee_id > employees.id
 Ref: employee_competencies.competency_id > competencies.id
 Ref: employee_competencies.competency_level_id > competency_levels.id
 Ref: employee_competencies.assessed_by > users.id
+
+Ref: employment_histories.employee_id > employees.id
+Ref: employment_histories.department_id > departments.id
+Ref: employment_histories.position_id > positions.id
+Ref: employment_histories.manager_id > employees.id
 
 Ref: training_participants.training_id > trainings.id
 Ref: training_participants.employee_id > employees.id
