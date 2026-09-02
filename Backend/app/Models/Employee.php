@@ -72,4 +72,9 @@ class Employee extends Model
     {
         return $this->hasMany(LeaveBalance::class);
     }
+
+    public function performanceReviews(): HasMany
+    {
+        return $this->hasMany(PerformanceReview::class);
+    }
 }

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('leave_type_id')->constrained('leave_types')->cascadeOnDelete();
             $table->date('start_date');
             $table->date('end_date');
-            $table->decimal('total_days');
+            $table->decimal('total_days', 5, 2);
             $table->text('reason');
             $table->string('status', 30);
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();

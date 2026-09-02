@@ -22,13 +22,16 @@ class RolePermissionSeeder extends Seeder
             'user.create',
             'user.update',
             'user.delete',
+
             // Role
             'role.view',
             'role.create',
             'role.update',
             'role.delete',
+
             // Permission
             'permission.view',
+
             // Department
             'department.view',
             'department.create',
@@ -47,14 +50,14 @@ class RolePermissionSeeder extends Seeder
             'employee.update',
             'employee.delete',
 
-            //Attendance
+            // Attendance
             'attendance.view',
             'attendance.clock_in',
             'attendance.clock_out',
             'attendance.view_all',
             'attendance.report',
 
-            //Leave
+            // Leave
             'leave_type.view',
             'leave_type.create',
             'leave_type.update',
@@ -70,6 +73,29 @@ class RolePermissionSeeder extends Seeder
             'leave_request.cancel',
 
             'leave_report.view',
+
+            // Performance Period
+            'performance-period.view',
+            'performance-period.create',
+            'performance-period.update',
+            'performance-period.delete',
+
+            // Performance Indicator
+            'performance-indicator.view',
+            'performance-indicator.create',
+            'performance-indicator.update',
+            'performance-indicator.delete',
+
+            // Performance Review
+            'performance-review.view',
+            'performance-review.create',
+            'performance-review.update',
+            'performance-review.submit',
+            'performance-review.approve',
+            'performance-review.reject',
+
+            // Performance Report
+            'performance-report.view',
         ];
 
         foreach ($permissions as $permission) {
@@ -105,35 +131,47 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         $superAdmin->syncPermissions($permissions);
+
         $admin->syncPermissions($permissions);
 
         $hrAdmin->syncPermissions([
+            // User
             'user.view',
             'user.create',
             'user.update',
+
+            // Role
             'role.view',
+
+            // Permission
             'permission.view',
+
+            // Department
             'department.view',
             'department.create',
             'department.update',
             'department.delete',
 
+            // Position
             'position.view',
             'position.create',
             'position.update',
             'position.delete',
 
+            // Employee
             'employee.view',
             'employee.create',
             'employee.update',
             'employee.delete',
 
+            // Attendance
             'attendance.view',
             'attendance.clock_in',
             'attendance.clock_out',
             'attendance.view_all',
             'attendance.report',
 
+            // Leave
             'leave_type.view',
             'leave_type.create',
             'leave_type.update',
@@ -148,23 +186,98 @@ class RolePermissionSeeder extends Seeder
             'leave_request.cancel',
 
             'leave_report.view',
+
+            // Performance Period
+            'performance-period.view',
+            'performance-period.create',
+            'performance-period.update',
+            'performance-period.delete',
+
+            // Performance Indicator
+            'performance-indicator.view',
+            'performance-indicator.create',
+            'performance-indicator.update',
+            'performance-indicator.delete',
+
+            // Performance Review
+            'performance-review.view',
+            'performance-review.create',
+            'performance-review.update',
+            'performance-review.submit',
+            'performance-review.approve',
+            'performance-review.reject',
+
+            // Performance Report
+            'performance-report.view',
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Manager
+        |--------------------------------------------------------------------------
+        */
 
         $manager->syncPermissions([
+            // User
             'user.view',
+
+            // Employee
             'employee.view',
+
+            // Performance Period
+            'performance-period.view',
+
+            // Performance Indicator
+            'performance-indicator.view',
+
+            // Performance Review
+            'performance-review.view',
+            'performance-review.create',
+            'performance-review.update',
+            'performance-review.submit',
+            'performance-review.approve',
+            'performance-review.reject',
+
+            // Performance Report
+            'performance-report.view',
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Employee
+        |--------------------------------------------------------------------------
+        */
+
         $employee->syncPermissions([
+            // User
             'user.view',
+
+            // Employee
             'employee.view',
+
+            // Attendance
             'attendance.view',
             'attendance.clock_in',
             'attendance.clock_out',
+
+            // Leave
             'leave_balance.view',
+
             'leave_request.view',
             'leave_request.create',
             'leave_request.cancel',
+
+            // Performance Period
+            'performance-period.view',
+
+            // Performance Indicator
+            'performance-indicator.view',
+
+            // Performance Review
+            'performance-review.view',
+            'performance-review.create',
+            'performance-review.update',
+            'performance-review.submit',
         ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

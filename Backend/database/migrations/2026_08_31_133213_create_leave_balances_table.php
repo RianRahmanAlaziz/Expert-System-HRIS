@@ -16,9 +16,9 @@ return new class extends Migration
             $table->foreignId('employee_id')->constrained('employees')->cascadeOnDelete();
             $table->foreignId('leave_type_id')->constrained('leave_types')->cascadeOnDelete();
             $table->integer('year');
-            $table->decimal('allocated_days')->default(0);
-            $table->decimal('used_days')->default(0);
-            $table->decimal('remaining_days')->default(0);
+            $table->decimal('allocated_days', 5, 2)->default(0);
+            $table->decimal('used_days', 5, 2)->default(0);
+            $table->decimal('remaining_days', 5, 2)->default(0);
             $table->timestamps();
 
             $table->unique([
