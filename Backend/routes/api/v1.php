@@ -6,6 +6,10 @@ use App\Http\Controllers\Api\V1\Auth\ProfileController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\EmployeeController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\LeaveBalanceController;
+use App\Http\Controllers\Api\V1\LeaveReportController;
+use App\Http\Controllers\Api\V1\LeaveRequestController;
+use App\Http\Controllers\Api\V1\LeaveTypeController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\PositionController;
 use App\Http\Controllers\Api\V1\RoleController;
@@ -110,4 +114,37 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::post('/attendances/clock-in', [AttendanceController::class, 'clockIn'])->middleware('permission:attendance.clock_in');
     Route::post('/attendances/clock-out', [AttendanceController::class, 'clockOut'])->middleware('permission:attendance.clock_out');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Leave
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware('permission:leave_type.view')->group(function () {
+        Route::get('/leave-types', [LeaveTypeController::class, 'index']);
+        Route::get('/leave-types/{leaveType}', [LeaveTypeController::class, 'show']);
+    });
+
+    Route::post('/leave-types', [LeaveTypeController::class, 'store'])->middleware('permission:leave_type.create');
+    Route::put('/leave-types/{leaveType}', [LeaveTypeController::class, 'update'])->middleware('permission:leave_type.update');
+    Route::delete('/leave-types/{leaveType}', [LeaveTypeController::class, 'destroy'])->middleware('permission:leave_type.delete');
+
+    Route::get('/leave-balances/me', [LeaveBalanceController::class, 'me'])->middleware('permission:leave_balance.view');
+
+    Route::middleware('permission:leave_balance.view_all')->group(function () {
+        Route::get('/leave-balances', [LeaveBalanceController::class, 'index']);
+        Route::get('/leave-balances/{employee}', [LeaveBalanceController::class, 'employee']);
+    });
+
+    Route::middleware('permission:leave_request.view')->group(function () {
+        Route::get('/leave-requests/me', [LeaveRequestController::class, 'me']);
+        Route::get('/leave-requests', [LeaveRequestController::class, 'index']);
+        Route::get('/leave-requests/{leaveRequest}', [LeaveRequestController::class, 'show']);
+    });
+
+    Route::post('/leave-requests', [LeaveRequestController::class, 'store'])->middleware('permission:leave_request.create');
+    Route::post('/leave-requests/{leaveRequest}/approve',  [LeaveRequestController::class, 'approve'])->middleware('permission:leave_request.approve');
+    Route::post('/leave-requests/{leaveRequest}/reject', [LeaveRequestController::class, 'reject'])->middleware('permission:leave_request.reject');
+    Route::post('/leave-requests/{leaveRequest}/cancel',  [LeaveRequestController::class, 'cancel'])->middleware('permission:leave_request.cancel');
+    Route::get('/leave-reports', [LeaveReportController::class, 'index'])->middleware('permission:leave_report.view');
 });
