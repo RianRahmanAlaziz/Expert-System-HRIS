@@ -6,12 +6,14 @@ use App\Http\Controllers\Api\V1\Auth\ProfileController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\EmployeeController;
 use App\Http\Controllers\Api\V1\HealthController;
-use App\Http\Controllers\Api\V1\LeaveBalanceController;
-use App\Http\Controllers\Api\V1\LeaveReportController;
-use App\Http\Controllers\Api\V1\LeaveRequestController;
-use App\Http\Controllers\Api\V1\LeaveTypeController;
+use App\Http\Controllers\Api\V1\Leave\LeaveBalanceController;
+use App\Http\Controllers\Api\V1\Leave\LeaveReportController;
+use App\Http\Controllers\Api\V1\Leave\LeaveRequestController;
+use App\Http\Controllers\Api\V1\Leave\LeaveTypeController;
+use App\Http\Controllers\Api\V1\Performance\PerformanceHistoryController;
 use App\Http\Controllers\Api\V1\Performance\PerformanceIndicatorController;
 use App\Http\Controllers\Api\V1\Performance\PerformancePeriodController;
+use App\Http\Controllers\Api\V1\Performance\PerformanceReportController;
 use App\Http\Controllers\Api\V1\Performance\PerformanceReviewController;
 use App\Http\Controllers\Api\V1\Performance\PerformanceReviewItemController;
 use App\Http\Controllers\Api\V1\PermissionController;
@@ -154,10 +156,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::prefix('performance')->group(function () {
         /*
-    |--------------------------------------------------------------------------
-    | Performance Period
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Performance Period
+        |--------------------------------------------------------------------------
+        */
         Route::get('periods', [PerformancePeriodController::class, 'index'])->middleware('permission:performance-period.view');
         Route::post('periods',  [PerformancePeriodController::class, 'store'])->middleware('permission:performance-period.create');
         Route::get('periods/{performancePeriod}',  [PerformancePeriodController::class, 'show'])->middleware('permission:performance-period.view');
@@ -166,10 +168,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('periods/{performancePeriod}',   [PerformancePeriodController::class, 'destroy'])->middleware('permission:performance-period.delete');
 
         /*
-    |--------------------------------------------------------------------------
-    | Performance Indicator
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Performance Indicator
+        |--------------------------------------------------------------------------
+        */
         Route::get('indicators/active', [PerformanceIndicatorController::class, 'active'])->middleware('permission:performance-indicator.view');
         Route::get('indicators',  [PerformanceIndicatorController::class, 'index'])->middleware('permission:performance-indicator.view');
         Route::post('indicators', [PerformanceIndicatorController::class, 'store'])->middleware('permission:performance-indicator.create');
@@ -179,10 +181,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('indicators/{performanceIndicator}', [PerformanceIndicatorController::class, 'destroy'])->middleware('permission:performance-indicator.delete');
 
         /*
-    |--------------------------------------------------------------------------
-    | Performance Review
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | Performance Review
+        |--------------------------------------------------------------------------
+        */
         Route::get('reviews',  [PerformanceReviewController::class, 'index'])->middleware('permission:performance-review.view');
         Route::post('reviews',  [PerformanceReviewController::class, 'store'])->middleware('permission:performance-review.create');
         Route::get('reviews/{performanceReview}',  [PerformanceReviewController::class, 'show'])->middleware('permission:performance-review.view');
@@ -192,18 +194,35 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('reviews/{performanceReview}/submit',  [PerformanceReviewController::class, 'submit'])->middleware('permission:performance-review.submit');
         Route::post('reviews/{performanceReview}/approve',  [PerformanceReviewController::class, 'approve'])->middleware('permission:performance-review.approve');
         Route::post('reviews/{performanceReview}/reject',   [PerformanceReviewController::class, 'reject'])->middleware('permission:performance-review.reject');
-        Route::delete('reviews/{performanceReview}',  [PerformanceReviewController::class, 'destroy'])->middleware('permission:performance-review.update');
+        Route::delete('reviews/{performanceReview}',  [PerformanceReviewController::class, 'destroy'])->middleware('permission:performance-review.delete');
 
         /*
-    |--------------------------------------------------------------------------
-    | Performance Review Items
-    |--------------------------------------------------------------------------
-    */
-        Route::get('reviews/{performanceReview}/items',   [PerformanceReviewItemController::class, 'index'])->middleware('permission:performance-review.view');
-        Route::post('reviews/{performanceReview}/items',  [PerformanceReviewItemController::class, 'store'])->middleware('permission:performance-review.update');
-        Route::get('reviews/{performanceReview}/items/{performanceReviewItem}',   [PerformanceReviewItemController::class, 'show'])->middleware('permission:performance-review.view');
-        Route::put('reviews/{performanceReview}/items/{performanceReviewItem}',   [PerformanceReviewItemController::class, 'update'])->middleware('permission:performance-review.update');
-        Route::patch('reviews/{performanceReview}/items/{performanceReviewItem}',   [PerformanceReviewItemController::class, 'update'])->middleware('permission:performance-review.update');
-        Route::delete('reviews/{performanceReview}/items/{performanceReviewItem}',  [PerformanceReviewItemController::class, 'destroy'])->middleware('permission:performance-review.update');
+        |--------------------------------------------------------------------------
+        | Performance Review Items
+        |--------------------------------------------------------------------------
+        */
+        Route::scopeBindings()->group(function (): void {
+            Route::get('reviews/{performanceReview}/items',   [PerformanceReviewItemController::class, 'index'])->middleware('permission:performance-review.view');
+            Route::post('reviews/{performanceReview}/items',  [PerformanceReviewItemController::class, 'store'])->middleware('permission:performance-review.update');
+            Route::get('reviews/{performanceReview}/items/{performanceReviewItem}',   [PerformanceReviewItemController::class, 'show'])->middleware('permission:performance-review.view');
+            Route::put('reviews/{performanceReview}/items/{performanceReviewItem}',   [PerformanceReviewItemController::class, 'update'])->middleware('permission:performance-review.update');
+            Route::patch('reviews/{performanceReview}/items/{performanceReviewItem}',   [PerformanceReviewItemController::class, 'update'])->middleware('permission:performance-review.update');
+            Route::delete('reviews/{performanceReview}/items/{performanceReviewItem}',  [PerformanceReviewItemController::class, 'destroy'])->middleware('permission:performance-review.delete');
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Performance History
+        |--------------------------------------------------------------------------
+        */
+        Route::get('history',  [PerformanceHistoryController::class, 'index'])->middleware('permission:performance-review.view');
+        Route::get('history/employees/{employee}',   [PerformanceHistoryController::class, 'employee'])->middleware('permission:performance-review.view');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Performance Report
+        |--------------------------------------------------------------------------
+        */
+        Route::get('reports',  [PerformanceReportController::class, 'index'])->middleware('permission:performance-report.view');
     });
 });

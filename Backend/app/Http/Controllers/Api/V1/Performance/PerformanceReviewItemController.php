@@ -11,6 +11,7 @@ use App\Models\PerformanceReviewItem;
 use App\Services\Performance\PerformanceReviewItemService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Gate;
 
 class PerformanceReviewItemController extends Controller
 {
@@ -21,6 +22,8 @@ class PerformanceReviewItemController extends Controller
     public function index(
         PerformanceReview $performanceReview
     ): JsonResponse {
+        Gate::authorize('view', $performanceReview);
+
         $items = $this->performanceReviewItemService->getByReview(
             $performanceReview,
         );
@@ -35,6 +38,8 @@ class PerformanceReviewItemController extends Controller
         StorePerformanceReviewItemRequest $request,
         PerformanceReview $performanceReview
     ): JsonResponse {
+        Gate::authorize('update', $performanceReview);
+
         $item = $this->performanceReviewItemService->create(
             $performanceReview,
             $request->validated(),
@@ -50,6 +55,10 @@ class PerformanceReviewItemController extends Controller
     public function show(
         PerformanceReviewItem $performanceReviewItem
     ): JsonResponse {
+        $performanceReviewItem->loadMissing('review');
+
+        Gate::authorize('view', $performanceReviewItem->review);
+
         $item = $this->performanceReviewItemService->getById(
             $performanceReviewItem,
         );
@@ -64,6 +73,10 @@ class PerformanceReviewItemController extends Controller
         UpdatePerformanceReviewItemRequest $request,
         PerformanceReviewItem $performanceReviewItem
     ): JsonResponse {
+        $performanceReviewItem->loadMissing('review');
+
+        Gate::authorize('update', $performanceReviewItem->review);
+
         $item = $this->performanceReviewItemService->update(
             $performanceReviewItem,
             $request->validated(),
@@ -78,6 +91,10 @@ class PerformanceReviewItemController extends Controller
     public function destroy(
         PerformanceReviewItem $performanceReviewItem
     ): JsonResponse {
+        $performanceReviewItem->loadMissing('review');
+
+        Gate::authorize('update', $performanceReviewItem->review);
+
         $this->performanceReviewItemService->delete(
             $performanceReviewItem,
         );
