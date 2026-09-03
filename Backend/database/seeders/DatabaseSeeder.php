@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             UserSeeder::class,
             LeaveTypeSeeder::class,
+            CompetencyLevelSeeder::class,
+            CompetencySeeder::class,
         ]);
     }
 }
