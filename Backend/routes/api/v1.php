@@ -3,6 +3,9 @@
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\ProfileController;
+use App\Http\Controllers\Api\V1\Competency\CompetencyController;
+use App\Http\Controllers\Api\V1\Competency\CompetencyLevelController;
+use App\Http\Controllers\Api\V1\Competency\EmployeeCompetencyController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\EmployeeController;
 use App\Http\Controllers\Api\V1\HealthController;
@@ -225,4 +228,49 @@ Route::middleware('auth:sanctum')->group(function (): void {
         */
         Route::get('reports',  [PerformanceReportController::class, 'index'])->middleware('permission:performance-report.view');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Competency
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('permission:competency.view')->group(function (): void {
+        Route::get('/competencies', [CompetencyController::class, 'index']);
+        Route::get('/competencies/{competency}', [CompetencyController::class, 'show']);
+    });
+
+    Route::post('/competencies', [CompetencyController::class, 'store'])->middleware('permission:competency.create');
+    Route::put('/competencies/{competency}', [CompetencyController::class, 'update'])->middleware('permission:competency.update');
+    Route::patch('/competencies/{competency}', [CompetencyController::class, 'update'])->middleware('permission:competency.update');
+    Route::delete('/competencies/{competency}', [CompetencyController::class, 'destroy'])->middleware('permission:competency.delete');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Competency Level
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware('permission:competency-level.view')->group(function (): void {
+        Route::get('/competency-levels', [CompetencyLevelController::class, 'index']);
+        Route::get('/competency-levels/{competencyLevel}', [CompetencyLevelController::class, 'show']);
+    });
+    Route::post('/competency-levels', [CompetencyLevelController::class, 'store'])->middleware('permission:competency-level.create');
+    Route::put('/competency-levels/{competencyLevel}', [CompetencyLevelController::class, 'update'])->middleware('permission:competency-level.update');
+    Route::patch('/competency-levels/{competencyLevel}', [CompetencyLevelController::class, 'update'])->middleware('permission:competency-level.update');
+    Route::delete('/competency-levels/{competencyLevel}', [CompetencyLevelController::class, 'destroy'])->middleware('permission:competency-level.delete');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Employee Competency
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware('permission:employee-competency.view')->group(function (): void {
+        Route::get('/employee-competencies', [EmployeeCompetencyController::class, 'index']);
+        Route::get('/employee-competencies/{employeeCompetency}', [EmployeeCompetencyController::class, 'show']);
+    });
+
+    Route::post('/employee-competencies', [EmployeeCompetencyController::class, 'store'])->middleware('permission:employee-competency.create');
+    Route::put('/employee-competencies/{employeeCompetency}', [EmployeeCompetencyController::class, 'update'])->middleware('permission:employee-competency.update');
+    Route::patch('/employee-competencies/{employeeCompetency}', [EmployeeCompetencyController::class, 'update'])->middleware('permission:employee-competency.update');
+    Route::delete('/employee-competencies/{employeeCompetency}', [EmployeeCompetencyController::class, 'destroy'])->middleware('permission:employee-competency.delete');
 });

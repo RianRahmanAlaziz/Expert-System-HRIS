@@ -97,6 +97,24 @@ class RolePermissionSeeder extends Seeder
 
             // Performance Report
             'performance-report.view',
+
+            // Competency
+            'competency.view',
+            'competency.create',
+            'competency.update',
+            'competency.delete',
+
+            // Competency Level
+            'competency-level.view',
+            'competency-level.create',
+            'competency-level.update',
+            'competency-level.delete',
+
+            // Employee Competency
+            'employee-competency.view',
+            'employee-competency.create',
+            'employee-competency.update',
+            'employee-competency.delete',
         ];
 
         foreach ($permissions as $permission) {
@@ -211,6 +229,24 @@ class RolePermissionSeeder extends Seeder
 
             // Performance Report
             'performance-report.view',
+
+            // Competency
+            'competency.view',
+            'competency.create',
+            'competency.update',
+            'competency.delete',
+
+            // Competency Level
+            'competency-level.view',
+            'competency-level.create',
+            'competency-level.update',
+            'competency-level.delete',
+
+            // Employee Competency
+            'employee-competency.view',
+            'employee-competency.create',
+            'employee-competency.update',
+            'employee-competency.delete',
         ]);
 
         /*

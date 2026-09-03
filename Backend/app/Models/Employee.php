@@ -77,4 +77,9 @@ class Employee extends Model
     {
         return $this->hasMany(PerformanceReview::class);
     }
+
+    public function employeeCompetencies(): HasMany
+    {
+        return $this->hasMany(EmployeeCompetency::class);
+    }
 }

@@ -43,4 +43,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(PerformanceReview::class,  'reviewer_id');
     }
+
+    public function assessedEmployeeCompetencies(): HasMany
+    {
+        return $this->hasMany(EmployeeCompetency::class, 'assessed_by');
+    }
 }
