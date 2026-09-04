@@ -82,4 +82,9 @@ class Employee extends Model
     {
         return $this->hasMany(EmployeeCompetency::class);
     }
+
+    public function trainingParticipants(): HasMany
+    {
+        return $this->hasMany(TrainingParticipant::class);
+    }
 }

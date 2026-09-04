@@ -115,6 +115,25 @@ class RolePermissionSeeder extends Seeder
             'employee-competency.create',
             'employee-competency.update',
             'employee-competency.delete',
+
+            // Training
+            'training.view',
+            'training.create',
+            'training.update',
+            'training.delete',
+
+
+            'training.participant.view',
+            'training.participant.register',
+            'training.participant.update',
+            'training.participant.delete',
+
+            'training.status.update',
+            'training.history.view',
+
+            'training.evaluation.view',
+            'training.evaluation.create',
+            'training.evaluation.update',
         ];
 
         foreach ($permissions as $permission) {
@@ -247,6 +266,25 @@ class RolePermissionSeeder extends Seeder
             'employee-competency.create',
             'employee-competency.update',
             'employee-competency.delete',
+            // Training
+
+            'training.view',
+            'training.create',
+            'training.update',
+            'training.delete',
+
+            'training.participant.view',
+            'training.participant.register',
+            'training.participant.update',
+            'training.participant.delete',
+
+            'training.status.update',
+
+            'training.history.view',
+
+            'training.evaluation.view',
+            'training.evaluation.create',
+            'training.evaluation.update',
         ]);
 
         /*
@@ -278,6 +316,13 @@ class RolePermissionSeeder extends Seeder
 
             // Performance Report
             'performance-report.view',
+            // Training
+            'training.view',
+            'training.participant.view',
+            'training.history.view',
+            'training.evaluation.view',
+            'training.evaluation.create',
+            'training.evaluation.update',
         ]);
 
         /*
@@ -316,6 +361,9 @@ class RolePermissionSeeder extends Seeder
             'performance-review.create',
             'performance-review.update',
             'performance-review.submit',
+            // Training
+            'training.view',
+            'training.history.view',
         ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

@@ -22,6 +22,8 @@ use App\Http\Controllers\Api\V1\Performance\PerformanceReviewItemController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\PositionController;
 use App\Http\Controllers\Api\V1\RoleController;
+use App\Http\Controllers\Api\V1\Training\TrainingController;
+use App\Http\Controllers\Api\V1\Training\TrainingParticipantController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class)->name('health');
@@ -273,4 +275,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::put('/employee-competencies/{employeeCompetency}', [EmployeeCompetencyController::class, 'update'])->middleware('permission:employee-competency.update');
     Route::patch('/employee-competencies/{employeeCompetency}', [EmployeeCompetencyController::class, 'update'])->middleware('permission:employee-competency.update');
     Route::delete('/employee-competencies/{employeeCompetency}', [EmployeeCompetencyController::class, 'destroy'])->middleware('permission:employee-competency.delete');
+
+    // Training
+    Route::apiResource('trainings', TrainingController::class);
+    Route::patch('trainings/{training}/status',   [TrainingController::class, 'updateStatus']);
+
+    Route::get('training-participants/history/{employeeId}',  [TrainingParticipantController::class, 'history']);
+    Route::apiResource('training-participants', TrainingParticipantController::class);
+    Route::post('training-participants/{trainingParticipant}/evaluate', [TrainingParticipantController::class, 'evaluate']);
 });
