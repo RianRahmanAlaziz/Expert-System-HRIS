@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\ProfileController;
+use App\Http\Controllers\Api\V1\Career\CareerPathController;
+use App\Http\Controllers\Api\V1\Career\CareerPathPositionController;
 use App\Http\Controllers\Api\V1\Competency\CompetencyController;
 use App\Http\Controllers\Api\V1\Competency\CompetencyLevelController;
 use App\Http\Controllers\Api\V1\Competency\EmployeeCompetencyController;
@@ -20,7 +22,11 @@ use App\Http\Controllers\Api\V1\Performance\PerformanceReportController;
 use App\Http\Controllers\Api\V1\Performance\PerformanceReviewController;
 use App\Http\Controllers\Api\V1\Performance\PerformanceReviewItemController;
 use App\Http\Controllers\Api\V1\PermissionController;
+use App\Http\Controllers\Api\V1\Position\PositionRequirementCompetencyController;
+use App\Http\Controllers\Api\V1\Position\PositionRequirementController;
 use App\Http\Controllers\Api\V1\PositionController;
+use App\Http\Controllers\Api\V1\Promotion\PromotionAssessmentController;
+use App\Http\Controllers\Api\V1\Promotion\PromotionAssessmentItemController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\Training\TrainingController;
 use App\Http\Controllers\Api\V1\Training\TrainingParticipantController;
@@ -56,6 +62,18 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // Positions
     Route::apiResource('positions', PositionController::class);
+
+    // Position Requirements
+    Route::get('/positions/{positionId}/requirements',    [PositionRequirementController::class, 'byPosition'],);
+    Route::apiResource('position-requirements',  PositionRequirementController::class,);
+
+    // Position Requirements Competencies
+    Route::get(
+        '/position-requirements/{positionRequirementId}/competencies',
+        [PositionRequirementCompetencyController::class, 'byRequirement',]
+    );
+
+    Route::apiResource('position-requirement-competencies',  PositionRequirementCompetencyController::class);
 
     // Employees
     Route::apiResource('employees', EmployeeController::class);
@@ -139,4 +157,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('training-participants/history/{employeeId}',  [TrainingParticipantController::class, 'history']);
     Route::apiResource('training-participants', TrainingParticipantController::class);
     Route::post('training-participants/{trainingParticipant}/evaluate', [TrainingParticipantController::class, 'evaluate']);
+
+    // Career
+    Route::apiResource('career-paths',   CareerPathController::class,);
+    Route::get('/career-paths/{careerPath}/positions',    [CareerPathPositionController::class, 'byCareerPath'],);
+    Route::apiResource('career-path-positions',  CareerPathPositionController::class,);
+
+    // Promotion Assessment
+    Route::get('/promotion-assessments/{promotionAssessment}/items', [PromotionAssessmentItemController::class, 'byAssessment']);
+    Route::apiResource('promotion-assessments',   PromotionAssessmentController::class);
+    Route::apiResource('promotion-assessment-items', PromotionAssessmentItemController::class);
 });

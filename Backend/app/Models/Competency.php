@@ -19,4 +19,9 @@ class Competency extends Model
     {
         return $this->hasMany(EmployeeCompetency::class);
     }
+
+    public function positionRequirementCompetencies(): HasMany
+    {
+        return $this->hasMany(PositionRequirementCompetency::class);
+    }
 }

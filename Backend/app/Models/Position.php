@@ -24,4 +24,23 @@ class Position extends Model
     {
         return $this->hasMany(Employee::class);
     }
+
+    public function positionRequirements(): HasMany
+    {
+        return $this->hasMany(PositionRequirement::class);
+    }
+    public function careerPathPositions(): HasMany
+    {
+        return $this->hasMany(CareerPathPosition::class);
+    }
+
+    public function currentPromotionAssessments(): HasMany
+    {
+        return $this->hasMany(PromotionAssessment::class,   'current_position_id',);
+    }
+
+    public function targetPromotionAssessments(): HasMany
+    {
+        return $this->hasMany(PromotionAssessment::class,    'target_position_id',);
+    }
 }

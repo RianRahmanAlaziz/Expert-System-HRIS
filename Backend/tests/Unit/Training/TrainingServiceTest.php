@@ -142,7 +142,7 @@ class TrainingServiceTest extends TestCase
 
         $this->assertSame(
             'Leadership Development',
-            $result->first()->name
+            $result->items()[0]->name
         );
     }
 

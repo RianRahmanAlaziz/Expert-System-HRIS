@@ -48,4 +48,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(EmployeeCompetency::class, 'assessed_by');
     }
+    public function promotionAssessments(): HasMany
+    {
+        return $this->hasMany(PromotionAssessment::class, 'assessed_by',);
+    }
 }

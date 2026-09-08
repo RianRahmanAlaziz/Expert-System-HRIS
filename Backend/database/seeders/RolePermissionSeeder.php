@@ -44,6 +44,18 @@ class RolePermissionSeeder extends Seeder
             'position.update',
             'position.delete',
 
+            // Position Requirement
+            'position_requirement.view',
+            'position_requirement.create',
+            'position_requirement.update',
+            'position_requirement.delete',
+
+            // Position Requirement Competency
+            'position_requirement_competency.view',
+            'position_requirement_competency.create',
+            'position_requirement_competency.update',
+            'position_requirement_competency.delete',
+
             // Employee
             'employee.view',
             'employee.create',
@@ -105,23 +117,22 @@ class RolePermissionSeeder extends Seeder
             'competency.delete',
 
             // Competency Level
-            'competency-level.view',
-            'competency-level.create',
-            'competency-level.update',
-            'competency-level.delete',
+            'competency_level.view',
+            'competency_level.create',
+            'competency_level.update',
+            'competency_level.delete',
 
             // Employee Competency
-            'employee-competency.view',
-            'employee-competency.create',
-            'employee-competency.update',
-            'employee-competency.delete',
+            'employee_competency.view',
+            'employee_competency.create',
+            'employee_competency.update',
+            'employee_competency.delete',
 
             // Training
             'training.view',
             'training.create',
             'training.update',
             'training.delete',
-
 
             'training.participant.view',
             'training.participant.register',
@@ -134,6 +145,30 @@ class RolePermissionSeeder extends Seeder
             'training.evaluation.view',
             'training.evaluation.create',
             'training.evaluation.update',
+
+            // Career Path
+            'career_path.view',
+            'career_path.create',
+            'career_path.update',
+            'career_path.delete',
+
+            // Career Path Position
+            'career_path_position.view',
+            'career_path_position.create',
+            'career_path_position.update',
+            'career_path_position.delete',
+
+            // Promotion Assessment
+            'promotion_assessment.view',
+            'promotion_assessment.create',
+            'promotion_assessment.update',
+            'promotion_assessment.delete',
+
+            // Promotion Assessment Item
+            'promotion_assessment_item.view',
+            'promotion_assessment_item.create',
+            'promotion_assessment_item.update',
+            'promotion_assessment_item.delete',
         ];
 
         foreach ($permissions as $permission) {
@@ -196,6 +231,18 @@ class RolePermissionSeeder extends Seeder
             'position.update',
             'position.delete',
 
+            // Position Requirement
+            'position_requirement.view',
+            'position_requirement.create',
+            'position_requirement.update',
+            'position_requirement.delete',
+
+            // Position Requirement Competency
+            'position_requirement_competency.view',
+            'position_requirement_competency.create',
+            'position_requirement_competency.update',
+            'position_requirement_competency.delete',
+
             // Employee
             'employee.view',
             'employee.create',
@@ -226,28 +273,28 @@ class RolePermissionSeeder extends Seeder
             'leave_report.view',
 
             // Performance Period
-            'performance-period.view',
-            'performance-period.create',
-            'performance-period.update',
-            'performance-period.delete',
+            'performance_period.view',
+            'performance_period.create',
+            'performance_period.update',
+            'performance_period.delete',
 
             // Performance Indicator
-            'performance-indicator.view',
-            'performance-indicator.create',
-            'performance-indicator.update',
-            'performance-indicator.delete',
+            'performance_indicator.view',
+            'performance_indicator.create',
+            'performance_indicator.update',
+            'performance_indicator.delete',
 
             // Performance Review
-            'performance-review.view',
-            'performance-review.create',
-            'performance-review.update',
-            'performance-review.delete',
-            'performance-review.submit',
-            'performance-review.approve',
-            'performance-review.reject',
+            'performance_review.view',
+            'performance_review.create',
+            'performance_review.update',
+            'performance_review.delete',
+            'performance_review.submit',
+            'performance_review.approve',
+            'performance_review.reject',
 
             // Performance Report
-            'performance-report.view',
+            'performance_report.view',
 
             // Competency
             'competency.view',
@@ -256,23 +303,23 @@ class RolePermissionSeeder extends Seeder
             'competency.delete',
 
             // Competency Level
-            'competency-level.view',
-            'competency-level.create',
-            'competency-level.update',
-            'competency-level.delete',
+            'competency_level.view',
+            'competency_level.create',
+            'competency_level.update',
+            'competency_level.delete',
 
             // Employee Competency
-            'employee-competency.view',
-            'employee-competency.create',
-            'employee-competency.update',
-            'employee-competency.delete',
+            'employee_competency.view',
+            'employee_competency.create',
+            'employee_competency.update',
+            'employee_competency.delete',
             // Training
 
             'training.view',
             'training.create',
             'training.update',
             'training.delete',
-
+            // Training Participant
             'training.participant.view',
             'training.participant.register',
             'training.participant.update',
@@ -282,9 +329,34 @@ class RolePermissionSeeder extends Seeder
 
             'training.history.view',
 
+            // Training evaluation
             'training.evaluation.view',
             'training.evaluation.create',
             'training.evaluation.update',
+
+            // Career Path
+            'career_path.view',
+            'career_path.create',
+            'career_path.update',
+            'career_path.delete',
+
+            // Career Path Position
+            'career_path_position.view',
+            'career_path_position.create',
+            'career_path_position.update',
+            'career_path_position.delete',
+
+            // Promotion Assessment
+            'promotion_assessment.view',
+            'promotion_assessment.create',
+            'promotion_assessment.update',
+            'promotion_assessment.delete',
+
+            // Promotion Assessment Item
+            'promotion_assessment_item.view',
+            'promotion_assessment_item.create',
+            'promotion_assessment_item.update',
+            'promotion_assessment_item.delete',
         ]);
 
         /*
@@ -301,21 +373,21 @@ class RolePermissionSeeder extends Seeder
             'employee.view',
 
             // Performance Period
-            'performance-period.view',
+            'performance_period.view',
 
             // Performance Indicator
-            'performance-indicator.view',
+            'performance_indicator.view',
 
             // Performance Review
-            'performance-review.view',
-            'performance-review.create',
-            'performance-review.update',
-            'performance-review.submit',
-            'performance-review.approve',
-            'performance-review.reject',
+            'performance_review.view',
+            'performance_review.create',
+            'performance_review.update',
+            'performance_review.submit',
+            'performance_review.approve',
+            'performance_review.reject',
 
             // Performance Report
-            'performance-report.view',
+            'performance_report.view',
             // Training
             'training.view',
             'training.participant.view',
@@ -351,16 +423,16 @@ class RolePermissionSeeder extends Seeder
             'leave_request.cancel',
 
             // Performance Period
-            'performance-period.view',
+            'performance_period.view',
 
             // Performance Indicator
-            'performance-indicator.view',
+            'performance_indicator.view',
 
             // Performance Review
-            'performance-review.view',
-            'performance-review.create',
-            'performance-review.update',
-            'performance-review.submit',
+            'performance_review.view',
+            'performance_review.create',
+            'performance_review.update',
+            'performance_review.submit',
             // Training
             'training.view',
             'training.history.view',

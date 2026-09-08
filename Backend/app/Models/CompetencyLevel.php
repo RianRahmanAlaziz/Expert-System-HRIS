@@ -17,4 +17,9 @@ class CompetencyLevel extends Model
     {
         return $this->hasMany(EmployeeCompetency::class);
     }
+
+    public function positionRequirementCompetencies(): HasMany
+    {
+        return $this->hasMany(PositionRequirementCompetency::class,  'required_level_id');
+    }
 }

@@ -2,9 +2,13 @@
 
 namespace Tests\Unit\Training;
 
+use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Position;
 use App\Models\Training;
 use App\Models\TrainingParticipant;
+use App\Models\User;
+use App\Services\EmployeeService;
 use App\Services\Training\TrainingParticipantService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,11 +28,89 @@ class TrainingParticipantServiceTest extends TestCase
         );
     }
 
+    private function createUser(?string $role = null): User
+    {
+        $user = User::factory()->create();
+
+        if ($role) {
+            $user->assignRole($role);
+        }
+
+        return $user;
+    }
+
+    private function createEmployee(
+        ?User $user = null,
+        ?Employee $manager = null
+    ): Employee {
+        $user ??= $this->createUser();
+
+        $department = Department::firstOrCreate(
+            ['code' => 'HR'],
+            [
+                'name' => 'Human Resources',
+                'description' => 'HR Department',
+                'status' => 'active',
+            ]
+        );
+
+        $position = Position::firstOrCreate(
+            ['code' => 'STAFF'],
+            [
+                'name' => 'Staff',
+                'description' => 'Staff Position',
+                'level' => 1,
+                'status' => 'active',
+            ]
+        );
+
+        $employeeService = app(EmployeeService::class);
+
+        $employeeData = [
+            'user_id' => $user->id,
+            'department_id' => $department->id,
+            'position_id' => $position->id,
+            'employee_number' => 'EMP-' . fake()->unique()->numerify('#####'),
+            'first_name' => 'Test',
+            'last_name' => 'Employee',
+            'gender' => 'male',
+            'join_date' => now()->subYear()->toDateString(),
+            'employment_type' => 'full_time',
+            'employment_status' => 'active',
+            'history_reason' => 'Initial employment',
+            'history_notes' => 'Employee joined the company.',
+        ];
+
+        if ($manager) {
+            $employeeData['manager_id'] = $manager->id;
+        }
+
+        return $employeeService->create($employeeData);
+    }
+
+    private function createParticipant(
+        ?Training $training = null,
+        ?Employee $employee = null,
+        array $attributes = []
+    ): TrainingParticipant {
+        $training ??= Training::factory()->create();
+        $employee ??= $this->createEmployee();
+
+        return TrainingParticipant::query()->create(array_merge([
+            'training_id' => $training->id,
+            'employee_id' => $employee->id,
+            'status' => 'registered',
+            'score' => null,
+            'registered_at' => now(),
+            'completed_at' => null,
+            'certificate_path' => null,
+        ], $attributes));
+    }
+
     public function test_it_can_register_participant(): void
     {
         $training = Training::factory()->create();
-
-        $employee = Employee::factory()->create();
+        $employee = $this->createEmployee();
 
         $participant = $this->participantService->create([
             'training_id' => $training->id,
@@ -72,7 +154,7 @@ class TrainingParticipantServiceTest extends TestCase
 
     public function test_it_can_find_participant_by_id(): void
     {
-        $participant = TrainingParticipant::factory()->create();
+        $participant = $this->createParticipant();
 
         $result = $this->participantService->findById(
             $participant->id
@@ -100,9 +182,11 @@ class TrainingParticipantServiceTest extends TestCase
 
     public function test_it_can_update_participant(): void
     {
-        $participant = TrainingParticipant::factory()->create([
-            'status' => 'registered',
-        ]);
+        $participant = $this->createParticipant(
+            attributes: [
+                'status' => 'registered',
+            ],
+        );
 
         $result = $this->participantService->update(
             $participant,
@@ -141,7 +225,7 @@ class TrainingParticipantServiceTest extends TestCase
 
     public function test_it_can_evaluate_participant(): void
     {
-        $participant = TrainingParticipant::factory()->create();
+        $participant = $this->createParticipant();
 
         $result = $this->participantService->evaluate(
             $participant,
@@ -164,29 +248,33 @@ class TrainingParticipantServiceTest extends TestCase
 
     public function test_it_can_get_employee_training_history(): void
     {
-        $employee = Employee::factory()->create();
+        $employee = $this->createEmployee();
 
         $trainingOne = Training::factory()->create();
         $trainingTwo = Training::factory()->create();
 
-        TrainingParticipant::factory()->create([
-            'employee_id' => $employee->id,
-            'training_id' => $trainingOne->id,
-            'registered_at' => '2026-09-01 10:00:00',
-        ]);
+        $this->createParticipant(
+            training: $trainingOne,
+            employee: $employee,
+            attributes: [
+                'registered_at' => '2026-09-01 10:00:00',
+            ],
+        );
 
-        TrainingParticipant::factory()->create([
-            'employee_id' => $employee->id,
-            'training_id' => $trainingTwo->id,
-            'registered_at' => '2026-09-02 10:00:00',
-        ]);
+        $this->createParticipant(
+            training: $trainingTwo,
+            employee: $employee,
+            attributes: [
+                'registered_at' => '2026-09-02 10:00:00',
+            ],
+        );
 
-        $otherEmployee = Employee::factory()->create();
+        $otherEmployee = $this->createEmployee();
 
-        TrainingParticipant::factory()->create([
-            'employee_id' => $otherEmployee->id,
-            'training_id' => $trainingOne->id,
-        ]);
+        $this->createParticipant(
+            training: $trainingOne,
+            employee: $otherEmployee,
+        );
 
         $result = $this->participantService->history(
             employeeId: $employee->id,
@@ -213,13 +301,13 @@ class TrainingParticipantServiceTest extends TestCase
 
         $otherTraining = Training::factory()->create();
 
-        TrainingParticipant::factory()->create([
-            'training_id' => $training->id,
-        ]);
+        $this->createParticipant(
+            training: $training,
+        );
 
-        TrainingParticipant::factory()->create([
-            'training_id' => $otherTraining->id,
-        ]);
+        $this->createParticipant(
+            training: $otherTraining,
+        );
 
         $result = $this->participantService->paginate(
             perPage: 15,
@@ -227,26 +315,25 @@ class TrainingParticipantServiceTest extends TestCase
         );
 
         $this->assertSame(1, $result->total());
-
         $this->assertSame(
             $training->id,
-            $result->first()->training_id
+            $result->items()[0]->training_id
         );
     }
 
     public function test_it_can_filter_participants_by_employee(): void
     {
-        $employee = Employee::factory()->create();
+        $employee = $this->createEmployee();
 
-        $otherEmployee = Employee::factory()->create();
+        $otherEmployee = $this->createEmployee();
 
-        TrainingParticipant::factory()->create([
-            'employee_id' => $employee->id,
-        ]);
+        $this->createParticipant(
+            employee: $employee,
+        );
 
-        TrainingParticipant::factory()->create([
-            'employee_id' => $otherEmployee->id,
-        ]);
+        $this->createParticipant(
+            employee: $otherEmployee,
+        );
 
         $result = $this->participantService->paginate(
             perPage: 15,
@@ -257,13 +344,13 @@ class TrainingParticipantServiceTest extends TestCase
 
         $this->assertSame(
             $employee->id,
-            $result->first()->employee_id
+            $result->items()[0]->employee_id
         );
     }
 
     public function test_it_can_delete_participant(): void
     {
-        $participant = TrainingParticipant::factory()->create();
+        $participant = $this->createParticipant();
 
         $this->participantService->delete($participant);
 
