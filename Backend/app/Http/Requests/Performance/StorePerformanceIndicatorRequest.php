@@ -11,6 +11,15 @@ class StorePerformanceIndicatorRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('is_active')) {
+            $this->merge([
+                'is_active' => true,
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [

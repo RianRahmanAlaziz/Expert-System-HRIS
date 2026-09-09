@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Performance;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UpdatePerformancePeriodRequest extends FormRequest
 {
@@ -26,7 +27,6 @@ class UpdatePerformancePeriodRequest extends FormRequest
             'end_date' => [
                 'sometimes',
                 'date',
-                'after_or_equal:start_date',
             ],
             'status' => [
                 'sometimes',
@@ -39,6 +39,40 @@ class UpdatePerformancePeriodRequest extends FormRequest
             ],
         ];
     }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if (! $this->has('end_date')) {
+                return;
+            }
+
+            $period = $this->route('period');
+
+            if (! $period) {
+                return;
+            }
+
+            $startDate = $this->input(
+                'start_date',
+                $period->start_date?->toDateString(),
+            );
+
+            $endDate = $this->input('end_date');
+
+            if (
+                $startDate !== null &&
+                $endDate !== null &&
+                $endDate < $startDate
+            ) {
+                $validator->errors()->add(
+                    'end_date',
+                    'Tanggal selesai harus sama atau setelah tanggal mulai.',
+                );
+            }
+        });
+    }
+
 
     public function messages(): array
     {

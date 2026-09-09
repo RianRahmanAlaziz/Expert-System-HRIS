@@ -34,7 +34,7 @@ class PerformanceHistoryResource extends JsonResource
             'review_type' => $this->review_type,
             'status' => $this->status,
             'overall_score' => $this->overall_score,
-            'review_date' => $this->review_date,
+            'review_date' => $this->review_date?->format('Y-m-d'),
             'comments' => $this->comments,
         ];
     }

@@ -5,19 +5,20 @@ namespace App\Services\Performance;
 use App\Models\PerformanceIndicator;
 use App\Models\PerformanceReview;
 use App\Models\PerformanceReviewItem;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class PerformanceReviewItemService
 {
-    public function getByReview(
-        PerformanceReview $review
-    ): Collection {
+    public function paginateByReview(
+        PerformanceReview $review,
+        int $perPage = 15,
+    ): LengthAwarePaginator {
         return $review->items()
             ->with('indicator')
-            ->latest()
-            ->get();
+            ->latest('id')
+            ->paginate($perPage);
     }
 
     public function getById(

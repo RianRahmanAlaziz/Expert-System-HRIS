@@ -11,6 +11,7 @@ use App\Models\PerformanceReviewItem;
 use App\Services\Performance\PerformanceReviewItemService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -31,17 +32,34 @@ class PerformanceReviewItemController extends Controller implements HasMiddlewar
     }
 
     public function index(
+        Request $request,
         PerformanceReview $performanceReview
     ): JsonResponse {
         Gate::authorize('view', $performanceReview);
 
-        $items = $this->performanceReviewItemService->getByReview(
-            $performanceReview,
+        $perPage = min(
+            max($request->integer('per_page', 15), 1),
+            100,
+        );
+
+        $items = $this->performanceReviewItemService->paginateByReview(
+            review: $performanceReview,
+            perPage: $perPage,
         );
 
         return ApiResponse::success(
             data: PerformanceReviewItemResource::collection($items),
             message: 'Performance review item berhasil diambil.',
+            meta: [
+                'pagination' => [
+                    'current_page' => $items->currentPage(),
+                    'last_page' => $items->lastPage(),
+                    'per_page' => $items->perPage(),
+                    'total' => $items->total(),
+                    'from' => $items->firstItem(),
+                    'to' => $items->lastItem(),
+                ],
+            ],
         );
     }
 
@@ -64,6 +82,7 @@ class PerformanceReviewItemController extends Controller implements HasMiddlewar
     }
 
     public function show(
+        PerformanceReview $performanceReview,
         PerformanceReviewItem $performanceReviewItem
     ): JsonResponse {
         $performanceReviewItem->loadMissing('review');
@@ -82,6 +101,7 @@ class PerformanceReviewItemController extends Controller implements HasMiddlewar
 
     public function update(
         UpdatePerformanceReviewItemRequest $request,
+        PerformanceReview $performanceReview,
         PerformanceReviewItem $performanceReviewItem
     ): JsonResponse {
         $performanceReviewItem->loadMissing('review');
@@ -100,6 +120,7 @@ class PerformanceReviewItemController extends Controller implements HasMiddlewar
     }
 
     public function destroy(
+        PerformanceReview $performanceReview,
         PerformanceReviewItem $performanceReviewItem
     ): JsonResponse {
         $performanceReviewItem->loadMissing('review');
@@ -111,8 +132,8 @@ class PerformanceReviewItemController extends Controller implements HasMiddlewar
         );
 
         return ApiResponse::success(
+            data: null,
             message: 'Performance review item berhasil dihapus.',
-            status: 204,
         );
     }
 }

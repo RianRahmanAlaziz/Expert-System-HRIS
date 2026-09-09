@@ -126,7 +126,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('reviews/{performanceReview}/approve', [PerformanceReviewController::class, 'approve']);
         Route::post('reviews/{performanceReview}/reject', [PerformanceReviewController::class, 'reject']);
 
-        Route::apiResource('reviews', PerformanceReviewController::class);
+        Route::apiResource('reviews', PerformanceReviewController::class)->parameters([
+            'reviews' => 'performanceReview',
+        ]);
 
         // Performance Review Items
         Route::scopeBindings()->group(function (): void {

@@ -3,13 +3,38 @@
 namespace App\Services\Performance;
 
 use App\Models\PerformanceIndicator;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 class PerformanceIndicatorService
 {
-    public function getAll(): Collection
-    {
-        return PerformanceIndicator::query()->latest()->get();
+    public function paginate(
+        int $perPage = 15,
+        string $search = '',
+        ?string $category = null,
+        ?bool $isActive = null,
+    ): LengthAwarePaginator {
+        return PerformanceIndicator::query()
+            ->when(
+                $search !== '',
+                function ($query) use ($search): void {
+                    $query->where(function ($query) use ($search): void {
+                        $query
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('description', 'like', "%{$search}%");
+                    });
+                },
+            )
+            ->when(
+                $category !== null,
+                fn($query) => $query->where('category', $category),
+            )
+            ->when(
+                $isActive !== null,
+                fn($query) => $query->where('is_active', $isActive),
+            )
+            ->latest('id')
+            ->paginate($perPage);
     }
 
     public function getActive(): Collection

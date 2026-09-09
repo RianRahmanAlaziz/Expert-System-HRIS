@@ -128,6 +128,22 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         /*
+        * Business rule error: 422.
+        */
+        $exceptions->render(
+            function (InvalidArgumentException $exception, Request $request) {
+                if (! $request->is('api/*')) {
+                    return null;
+                }
+
+                return ApiResponse::error(
+                    message: $exception->getMessage(),
+                    status: 422,
+                );
+            }
+        );
+
+        /*
          * Error internal yang tidak dikenali: 500.
          */
         $exceptions->render(

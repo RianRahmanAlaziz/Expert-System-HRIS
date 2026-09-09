@@ -3,13 +3,33 @@
 namespace App\Services\Performance;
 
 use App\Models\PerformancePeriod;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class PerformancePeriodService
 {
-    public function getAll(): Collection
-    {
-        return PerformancePeriod::query()->latest('start_date')->get();
+    public function paginate(
+        int $perPage = 15,
+        string $search = '',
+        ?string $status = null,
+    ): LengthAwarePaginator {
+        return PerformancePeriod::query()
+            ->when(
+                $search !== '',
+                function ($query) use ($search): void {
+                    $query->where(function ($query) use ($search): void {
+                        $query
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('description', 'like', "%{$search}%");
+                    });
+                },
+            )
+            ->when(
+                $status !== null,
+                fn($query) => $query->where('status', $status),
+            )
+            ->latest('start_date')
+            ->latest('id')
+            ->paginate($perPage);
     }
 
     public function getById(int $id): PerformancePeriod

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Performance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Performance\PerformancePeriodIndexRequest;
 use App\Http\Requests\Performance\StorePerformancePeriodRequest;
 use App\Http\Requests\Performance\UpdatePerformancePeriodRequest;
 use App\Http\Resources\V1\Performance\PerformancePeriodResource;
@@ -29,13 +30,36 @@ class PerformancePeriodController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index(): JsonResponse
+    public function index(PerformancePeriodIndexRequest $request): JsonResponse
     {
-        $periods = $this->performancePeriodService->getAll();
+        $perPage = min(
+            max($request->integer('per_page', 15), 1),
+            100,
+        );
+
+        $search = trim(
+            (string) $request->query('search', ''),
+        );
+
+        $periods = $this->performancePeriodService->paginate(
+            perPage: $perPage,
+            search: $search,
+            status: $request->query('status'),
+        );
 
         return ApiResponse::success(
             data: PerformancePeriodResource::collection($periods),
-            message: 'Performance period berhasil diambil.',
+            message: 'Daftar Performance period berhasil diambil.',
+            meta: [
+                'pagination' => [
+                    'current_page' => $periods->currentPage(),
+                    'last_page' => $periods->lastPage(),
+                    'per_page' => $periods->perPage(),
+                    'total' => $periods->total(),
+                    'from' => $periods->firstItem(),
+                    'to' => $periods->lastItem(),
+                ],
+            ],
         );
     }
 
@@ -54,10 +78,10 @@ class PerformancePeriodController extends Controller implements HasMiddleware
     }
 
     public function show(
-        PerformancePeriod $performancePeriod
+        PerformancePeriod $period,
     ): JsonResponse {
         $period = $this->performancePeriodService->getById(
-            $performancePeriod->id,
+            $period->id,
         );
 
         return ApiResponse::success(
@@ -68,10 +92,10 @@ class PerformancePeriodController extends Controller implements HasMiddleware
 
     public function update(
         UpdatePerformancePeriodRequest $request,
-        PerformancePeriod $performancePeriod
+        PerformancePeriod $period,
     ): JsonResponse {
         $period = $this->performancePeriodService->update(
-            $performancePeriod,
+            $period,
             $request->validated(),
         );
 
@@ -82,15 +106,13 @@ class PerformancePeriodController extends Controller implements HasMiddleware
     }
 
     public function destroy(
-        PerformancePeriod $performancePeriod
+        PerformancePeriod $period,
     ): JsonResponse {
-        $this->performancePeriodService->delete(
-            $performancePeriod,
-        );
+        $this->performancePeriodService->delete($period);
 
         return ApiResponse::success(
+            data: null,
             message: 'Performance period berhasil dihapus.',
-            status: 204,
         );
     }
 }

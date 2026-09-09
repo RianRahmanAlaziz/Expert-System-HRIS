@@ -15,6 +15,15 @@ class StorePerformancePeriodRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('status')) {
+            $this->merge([
+                'status' => 'draft',
+            ]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *

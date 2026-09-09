@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Performance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Performance\PerformanceReviewIndexRequest;
 use App\Http\Requests\Performance\StorePerformanceReviewRequest;
 use App\Http\Requests\Performance\UpdatePerformanceReviewRequest;
 use App\Http\Resources\V1\Performance\PerformanceReviewResource;
@@ -34,20 +35,55 @@ class PerformanceReviewController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(PerformanceReviewIndexRequest $request): JsonResponse
     {
         Gate::authorize(
             'viewAny',
-            PerformanceReview::class
+            PerformanceReview::class,
         );
 
-        $reviews = $this->performanceReviewService->getAll(
-            $request->user()
+        $perPage = min(
+            max($request->integer('per_page', 15), 1),
+            100,
+        );
+
+        $search = trim(
+            (string) $request->query('search', ''),
+        );
+
+        $employeeId = $request->integer('employee_id');
+        $employeeId = $employeeId > 0 ? $employeeId : null;
+
+        $performancePeriodId = $request->integer(
+            'performance_period_id',
+        );
+        $performancePeriodId = $performancePeriodId > 0
+            ? $performancePeriodId
+            : null;
+
+        $reviews = $this->performanceReviewService->paginate(
+            user: $request->user(),
+            perPage: $perPage,
+            search: $search,
+            employeeId: $employeeId,
+            performancePeriodId: $performancePeriodId,
+            reviewType: $request->query('review_type'),
+            status: $request->query('status'),
         );
 
         return ApiResponse::success(
             data: PerformanceReviewResource::collection($reviews),
-            message: 'Performance review berhasil diambil.'
+            message: 'Daftar Performance review berhasil diambil.',
+            meta: [
+                'pagination' => [
+                    'current_page' => $reviews->currentPage(),
+                    'last_page' => $reviews->lastPage(),
+                    'per_page' => $reviews->perPage(),
+                    'total' => $reviews->total(),
+                    'from' => $reviews->firstItem(),
+                    'to' => $reviews->lastItem(),
+                ],
+            ],
         );
     }
 
@@ -207,8 +243,8 @@ class PerformanceReviewController extends Controller implements HasMiddleware
         );
 
         return ApiResponse::success(
+            data: null,
             message: 'Performance review berhasil dihapus.',
-            status: 204,
         );
     }
 }

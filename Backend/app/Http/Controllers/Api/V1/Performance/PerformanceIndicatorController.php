@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Performance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Performance\PerformanceIndicatorIndexRequest;
 use App\Http\Requests\Performance\StorePerformanceIndicatorRequest;
 use App\Http\Requests\Performance\UpdatePerformanceIndicatorRequest;
 use App\Http\Resources\V1\Performance\PerformanceIndicatorResource;
@@ -29,13 +30,41 @@ class PerformanceIndicatorController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index(): JsonResponse
+    public function index(PerformanceIndicatorIndexRequest $request): JsonResponse
     {
-        $indicators = $this->performanceIndicatorService->getAll();
+        $perPage = min(
+            max($request->integer('per_page', 15), 1),
+            100,
+        );
+
+        $search = trim(
+            (string) $request->query('search', ''),
+        );
+
+        $isActive = $request->has('is_active')
+            ? $request->boolean('is_active')
+            : null;
+
+        $indicators = $this->performanceIndicatorService->paginate(
+            perPage: $perPage,
+            search: $search,
+            category: $request->query('category'),
+            isActive: $isActive,
+        );
 
         return ApiResponse::success(
             data: PerformanceIndicatorResource::collection($indicators),
-            message: 'Performance indicator berhasil diambil.',
+            message: 'Daftar Performance indicator berhasil diambil.',
+            meta: [
+                'pagination' => [
+                    'current_page' => $indicators->currentPage(),
+                    'last_page' => $indicators->lastPage(),
+                    'per_page' => $indicators->perPage(),
+                    'total' => $indicators->total(),
+                    'from' => $indicators->firstItem(),
+                    'to' => $indicators->lastItem(),
+                ],
+            ],
         );
     }
 
@@ -64,10 +93,10 @@ class PerformanceIndicatorController extends Controller implements HasMiddleware
     }
 
     public function show(
-        PerformanceIndicator $performanceIndicator
+        PerformanceIndicator $indicator,
     ): JsonResponse {
         $indicator = $this->performanceIndicatorService->getById(
-            $performanceIndicator->id,
+            $indicator->id,
         );
 
         return ApiResponse::success(
@@ -78,10 +107,10 @@ class PerformanceIndicatorController extends Controller implements HasMiddleware
 
     public function update(
         UpdatePerformanceIndicatorRequest $request,
-        PerformanceIndicator $performanceIndicator
+        PerformanceIndicator $indicator
     ): JsonResponse {
         $indicator = $this->performanceIndicatorService->update(
-            $performanceIndicator,
+            $indicator,
             $request->validated(),
         );
 
@@ -92,15 +121,15 @@ class PerformanceIndicatorController extends Controller implements HasMiddleware
     }
 
     public function destroy(
-        PerformanceIndicator $performanceIndicator
+        PerformanceIndicator $indicator
     ): JsonResponse {
         $this->performanceIndicatorService->delete(
-            $performanceIndicator,
+            $indicator,
         );
 
         return ApiResponse::success(
+            data: null,
             message: 'Performance indicator berhasil dihapus.',
-            status: 204,
         );
     }
 }

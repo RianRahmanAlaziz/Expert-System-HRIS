@@ -49,6 +49,17 @@ class PerformanceReview extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(PerformanceReviewItem::class);
+        return $this->hasMany(
+            PerformanceReviewItem::class,
+            'performance_review_id',
+        );
+    }
+
+    public function performanceReviewItems(): HasMany
+    {
+        return $this->hasMany(
+            PerformanceReviewItem::class,
+            'performance_review_id',
+        );
     }
 }
