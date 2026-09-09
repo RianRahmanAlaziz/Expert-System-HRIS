@@ -169,6 +169,38 @@ class RolePermissionSeeder extends Seeder
             'promotion_assessment_item.create',
             'promotion_assessment_item.update',
             'promotion_assessment_item.delete',
+
+            // Expert System
+
+            // Knowledge Category
+            'knowledge_category.view',
+            'knowledge_category.create',
+            'knowledge_category.update',
+            'knowledge_category.delete',
+
+            // Knowledge
+            'knowledge.view',
+            'knowledge.create',
+            'knowledge.update',
+            'knowledge.delete',
+
+            // Expert Rule
+            'expert_rule.view',
+            'expert_rule.create',
+            'expert_rule.update',
+            'expert_rule.delete',
+
+            // Rule Condition
+            'rule_condition.view',
+            'rule_condition.create',
+            'rule_condition.update',
+            'rule_condition.delete',
+
+            // Rule Action
+            'rule_action.view',
+            'rule_action.create',
+            'rule_action.update',
+            'rule_action.delete',
         ];
 
         foreach ($permissions as $permission) {
@@ -357,6 +389,38 @@ class RolePermissionSeeder extends Seeder
             'promotion_assessment_item.create',
             'promotion_assessment_item.update',
             'promotion_assessment_item.delete',
+
+            // Expert System
+
+            // Knowledge Category
+            'knowledge_category.view',
+            'knowledge_category.create',
+            'knowledge_category.update',
+            'knowledge_category.delete',
+
+            // Knowledge
+            'knowledge.view',
+            'knowledge.create',
+            'knowledge.update',
+            'knowledge.delete',
+
+            // Expert Rule
+            'expert_rule.view',
+            'expert_rule.create',
+            'expert_rule.update',
+            'expert_rule.delete',
+
+            // Rule Condition
+            'rule_condition.view',
+            'rule_condition.create',
+            'rule_condition.update',
+            'rule_condition.delete',
+
+            // Rule Action
+            'rule_action.view',
+            'rule_action.create',
+            'rule_action.update',
+            'rule_action.delete',
         ]);
 
         /*

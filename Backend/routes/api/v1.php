@@ -10,6 +10,11 @@ use App\Http\Controllers\Api\V1\Competency\CompetencyLevelController;
 use App\Http\Controllers\Api\V1\Competency\EmployeeCompetencyController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\EmployeeController;
+use App\Http\Controllers\Api\V1\ExpertSystem\ExpertRuleController;
+use App\Http\Controllers\Api\V1\ExpertSystem\KnowledgeCategoryController;
+use App\Http\Controllers\Api\V1\ExpertSystem\KnowledgeController;
+use App\Http\Controllers\Api\V1\ExpertSystem\RuleActionController;
+use App\Http\Controllers\Api\V1\ExpertSystem\RuleConditionController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Leave\LeaveBalanceController;
 use App\Http\Controllers\Api\V1\Leave\LeaveReportController;
@@ -167,4 +172,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/promotion-assessments/{promotionAssessment}/items', [PromotionAssessmentItemController::class, 'byAssessment']);
     Route::apiResource('promotion-assessments',   PromotionAssessmentController::class);
     Route::apiResource('promotion-assessment-items', PromotionAssessmentItemController::class);
+
+    // Expert System
+    Route::apiResource('knowledge-categories',  KnowledgeCategoryController::class);
+    Route::apiResource('knowledge', KnowledgeController::class);
+    Route::apiResource('expert-rules',  ExpertRuleController::class);
+    Route::apiResource('rule-conditions',   RuleConditionController::class);
+    Route::apiResource('rule-actions',  RuleActionController::class);
 });
