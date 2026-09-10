@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Promotion\StorePromotionAssessmentItemRequest;
 use App\Http\Requests\Promotion\UpdatePromotionAssessmentItemRequest;
 use App\Http\Resources\V1\Promotion\PromotionAssessmentItemResource;
+use App\Models\PromotionAssessment;
 use App\Models\PromotionAssessmentItem;
 use App\Services\Promotion\PromotionAssessmentItemService;
 use App\Support\ApiResponse;
@@ -92,6 +93,7 @@ class PromotionAssessmentItemController extends Controller implements HasMiddlew
         return ApiResponse::success(
             data: PromotionAssessmentItemResource::make($item),
             message: 'Promotion assessment item berhasil ditambahkan.',
+            status: 201,
         );
     }
 
@@ -108,9 +110,11 @@ class PromotionAssessmentItemController extends Controller implements HasMiddlew
         );
     }
 
-    public function byAssessment(int $promotionAssessmentId): JsonResponse
-    {
-        $items = $this->promotionAssessmentItemService->findByPromotionAssessmentId($promotionAssessmentId);
+    public function byAssessment(
+        PromotionAssessment $promotionAssessment,
+    ): JsonResponse {
+        $items = $this->promotionAssessmentItemService
+            ->findByPromotionAssessmentId($promotionAssessment->id);
 
         return ApiResponse::success(
             data: PromotionAssessmentItemResource::collection($items),

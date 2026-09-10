@@ -101,6 +101,7 @@ class PromotionAssessmentController extends Controller implements HasMiddleware
         return ApiResponse::success(
             data: PromotionAssessmentResource::make($assessment),
             message: 'Promotion assessment berhasil dibuat.',
+            status: 201,
         );
     }
 
