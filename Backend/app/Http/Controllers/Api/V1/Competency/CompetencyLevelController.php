@@ -74,6 +74,7 @@ class CompetencyLevelController extends Controller implements HasMiddleware
         return ApiResponse::success(
             data: CompetencyLevelResource::make($competencyLevel),
             message: 'Competency level berhasil dibuat.',
+            status: 201,
         );
     }
 
@@ -91,8 +92,10 @@ class CompetencyLevelController extends Controller implements HasMiddleware
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCompetencyLevelRequest $request, CompetencyLevel $competencyLevel): JsonResponse
-    {
+    public function update(
+        UpdateCompetencyLevelRequest $request,
+        CompetencyLevel $competencyLevel
+    ): JsonResponse {
         $competencyLevel = $this->competencyLevelService->update(
             $competencyLevel,
             $request->validated(),

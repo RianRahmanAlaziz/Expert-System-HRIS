@@ -35,7 +35,11 @@ class EmployeeCompetencyController extends Controller implements HasMiddleware
      */
     public function index(Request $request): JsonResponse
     {
-        $perPage = min(max($request->integer('per_page', 15), 1), 100,);
+        $perPage = min(
+            max($request->integer('per_page', 15), 1),
+            100,
+        );
+
         $search = trim((string) $request->query('search', ''));
 
         $employeeCompetencies = $this->employeeCompetencyService->paginate(
@@ -70,6 +74,7 @@ class EmployeeCompetencyController extends Controller implements HasMiddleware
         return ApiResponse::success(
             data: new EmployeeCompetencyResource($employeeCompetency),
             message: 'Employee Competency berhasil ditambahkan.',
+            status: 201,
         );
     }
 
@@ -110,6 +115,7 @@ class EmployeeCompetencyController extends Controller implements HasMiddleware
         $this->employeeCompetencyService->delete($employeeCompetency);
 
         return ApiResponse::success(
+            data: null,
             message: 'Employee Competency berhasil dihapus.',
         );
     }

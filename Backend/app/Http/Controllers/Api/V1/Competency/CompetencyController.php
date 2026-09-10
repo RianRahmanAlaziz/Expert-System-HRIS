@@ -74,6 +74,7 @@ class CompetencyController extends Controller implements HasMiddleware
         return ApiResponse::success(
             data: CompetencyResource::make($competency),
             message: 'Competency berhasil dibuat.',
+            status: 201,
         );
     }
 
