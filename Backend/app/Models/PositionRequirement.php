@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'position_id',
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class PositionRequirement extends Model
 {
+    use SoftDeletes;
+
     public function position(): BelongsTo
     {
         return $this->belongsTo(Position::class);

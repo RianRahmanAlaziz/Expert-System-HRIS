@@ -51,7 +51,8 @@ class PositionRequirementService
             ->with('position')
             ->where('position_id', $positionId)
             ->where('is_active', true)
-            ->latest()
+            ->latest('created_at')
+            ->latest('id')
             ->first();
     }
 

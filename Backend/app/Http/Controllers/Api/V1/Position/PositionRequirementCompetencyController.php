@@ -97,6 +97,7 @@ class PositionRequirementCompetencyController extends Controller implements HasM
                 $positionRequirementCompetency,
             ),
             message: 'Position requirement competency berhasil dibuat.',
+            status: 201,
         );
     }
 

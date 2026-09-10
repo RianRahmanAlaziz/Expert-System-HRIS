@@ -84,6 +84,7 @@ class PositionRequirementController extends Controller implements HasMiddleware
                 $positionRequirement,
             ),
             message: 'Position requirement berhasil dibuat.',
+            status: 201,
         );
     }
     /**
