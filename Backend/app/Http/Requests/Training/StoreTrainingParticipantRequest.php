@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Training;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTrainingParticipantRequest extends FormRequest
 {
@@ -31,6 +32,12 @@ class StoreTrainingParticipantRequest extends FormRequest
                 'required',
                 'integer',
                 'exists:employees,id',
+                Rule::unique('training_participants')->where(
+                    fn($query) => $query->where(
+                        'training_id',
+                        $this->input('training_id'),
+                    ),
+                ),
             ],
             'status' => [
                 'sometimes',

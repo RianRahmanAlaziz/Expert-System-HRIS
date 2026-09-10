@@ -87,6 +87,7 @@ class TrainingParticipantController extends Controller implements HasMiddleware
         return ApiResponse::success(
             data: TrainingParticipantResource::make($participant),
             message: 'Peserta berhasil didaftarkan ke training.',
+            status: 201,
         );
     }
 

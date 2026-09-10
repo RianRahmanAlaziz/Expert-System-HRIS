@@ -22,6 +22,15 @@ class Training extends Model
 {
     use HasFactory;
 
+    protected function casts(): array
+    {
+        return [
+            'start_date' => 'date',
+            'end_date' => 'date',
+            'capacity' => 'integer',
+        ];
+    }
+
     public function participants(): HasMany
     {
         return $this->hasMany(TrainingParticipant::class);

@@ -19,6 +19,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class TrainingParticipant extends Model
 {
     use HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'score' => 'decimal:2',
+            'registered_at' => 'datetime',
+            'completed_at' => 'datetime',
+        ];
+    }
+
     public function training(): BelongsTo
     {
         return $this->belongsTo(Training::class);

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Training;
 
-
+use App\Models\Training;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -56,6 +56,7 @@ class UpdateTrainingRequest extends FormRequest
             'end_date' => [
                 'sometimes',
                 'date',
+                'after_or_equal:start_date',
             ],
             'capacity' => [
                 'nullable',
@@ -68,5 +69,25 @@ class UpdateTrainingRequest extends FormRequest
                 'max:30',
             ],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $training = $this->route('training');
+
+        if (! $training instanceof Training) {
+            return;
+        }
+
+        $this->merge([
+            'start_date' => $this->input(
+                'start_date',
+                $training->start_date?->format('Y-m-d'),
+            ),
+            'end_date' => $this->input(
+                'end_date',
+                $training->end_date?->format('Y-m-d'),
+            ),
+        ]);
     }
 }
