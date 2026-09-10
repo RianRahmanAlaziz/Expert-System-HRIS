@@ -64,6 +64,7 @@ class RuleConditionController extends Controller implements HasMiddleware
         return ApiResponse::success(
             data: RuleConditionResource::make($ruleCondition),
             message: 'Rule condition berhasil dibuat.',
+            status: 201,
         );
     }
 

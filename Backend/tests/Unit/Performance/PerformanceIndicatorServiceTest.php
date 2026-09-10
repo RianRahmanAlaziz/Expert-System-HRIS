@@ -60,12 +60,9 @@ class PerformanceIndicatorServiceTest extends TestCase
             name: 'Leadership',
         );
 
-        $result = $this->performanceIndicatorService->getAll();
+        $result = $this->performanceIndicatorService->paginate();
 
-        $this->assertCount(
-            2,
-            $result
-        );
+        $this->assertSame(2, $result->total());
     }
 
 

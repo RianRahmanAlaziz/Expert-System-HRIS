@@ -12,7 +12,6 @@ use App\Models\User;
 use App\Services\EmployeeService;
 use App\Services\Performance\PerformanceHistoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -152,11 +151,11 @@ class PerformanceHistoryServiceTest extends TestCase
         $this->createReview($employee1, $period, $user);
         $this->createReview($employee2, $period, $user);
 
-        $result = $this->service->getHistory($user);
+        $result = $this->service->paginateHistory($user);
 
-        $this->assertCount(2, $result);
+        $this->assertSame(2, $result->total());
         $this->assertTrue(
-            $result->every(fn($review) => $review->status === 'approved')
+            collect($result->items())->every(fn($review) => $review->status === 'approved')
         );
     }
 
@@ -173,9 +172,9 @@ class PerformanceHistoryServiceTest extends TestCase
         $this->createReview($employee1, $period, $user);
         $this->createReview($employee2, $period, $user);
 
-        $result = $this->service->getHistory($user);
+        $result = $this->service->paginateHistory(user: $user);
 
-        $this->assertCount(2, $result);
+        $this->assertSame(2, $result->total());
     }
 
 
@@ -191,9 +190,9 @@ class PerformanceHistoryServiceTest extends TestCase
         $this->createReview($employee1, $period, $user);
         $this->createReview($employee2, $period, $user);
 
-        $result = $this->service->getHistory($user);
+        $result = $this->service->paginateHistory(user: $user);
 
-        $this->assertCount(2, $result);
+        $this->assertSame(2, $result->total());
     }
 
 
@@ -209,11 +208,22 @@ class PerformanceHistoryServiceTest extends TestCase
         $review1 = $this->createReview($employee1, $period, $user);
         $this->createReview($employee2, $period, $user);
 
-        $result = $this->service->getHistory($user, $employee1);
+        $result = $this->service->paginateHistory(
+            user: $user,
+            employee: $employee1,
+        );
 
-        $this->assertCount(1, $result);
-        $this->assertEquals($review1->id, $result->first()->id);
-        $this->assertEquals($employee1->id, $result->first()->employee_id);
+        $this->assertSame(1, $result->total());
+
+        $this->assertEquals(
+            $review1->id,
+            $result->items()[0]->id,
+        );
+
+        $this->assertEquals(
+            $employee1->id,
+            $result->items()[0]->employee_id,
+        );
     }
 
 
@@ -235,12 +245,12 @@ class PerformanceHistoryServiceTest extends TestCase
         $this->createReview($employee, $period, $managerUser);
         $this->createReview($otherEmployee, $period, $managerUser);
 
-        $result = $this->service->getHistory($managerUser);
+        $result = $this->service->paginateHistory(user: $managerUser);
 
-        $this->assertCount(1, $result);
+        $this->assertSame(1, $result->total());
         $this->assertEquals(
             $employee->id,
-            $result->first()->employee_id
+            $result->items()[0]->employee_id
         );
     }
 
@@ -257,12 +267,12 @@ class PerformanceHistoryServiceTest extends TestCase
 
         $this->createReview($otherEmployee, $period, $managerUser);
 
-        $result = $this->service->getHistory(
-            $managerUser,
-            $otherEmployee
+        $result = $this->service->paginateHistory(
+            user: $managerUser,
+            employee: $otherEmployee,
         );
 
-        $this->assertCount(0, $result);
+        $this->assertSame(0, $result->total());
     }
 
 
@@ -296,15 +306,15 @@ class PerformanceHistoryServiceTest extends TestCase
             $managerUser
         );
 
-        $result = $this->service->getHistory(
-            $managerUser,
-            $employee1
+        $result = $this->service->paginateHistory(
+            user: $managerUser,
+            employee: $employee1,
         );
 
-        $this->assertCount(1, $result);
+        $this->assertSame(1, $result->total());
         $this->assertEquals(
             $review1->id,
-            $result->first()->id
+            $result->items()[0]->id
         );
     }
 
@@ -332,12 +342,12 @@ class PerformanceHistoryServiceTest extends TestCase
             $reviewer
         );
 
-        $result = $this->service->getHistory($employeeUser);
+        $result = $this->service->paginateHistory(user: $employeeUser);
 
-        $this->assertCount(1, $result);
+        $this->assertSame(1, $result->total());
         $this->assertEquals(
             $review->id,
-            $result->first()->id
+            $result->items()[0]->id
         );
     }
 
@@ -360,9 +370,9 @@ class PerformanceHistoryServiceTest extends TestCase
         );
 
         try {
-            $this->service->getHistory(
-                $employeeUser,
-                $otherEmployee
+            $this->service->paginateHistory(
+                user: $employeeUser,
+                employee: $otherEmployee,
             );
 
             $this->fail('Expected HTTP 403 exception was not thrown.');
@@ -386,10 +396,13 @@ class PerformanceHistoryServiceTest extends TestCase
             $user
         );
 
-        $result = $this->service->getHistory($user);
+        $result = $this->service->paginateHistory(user: $user);
 
-        $this->assertInstanceOf(Collection::class, $result);
-        $this->assertCount(0, $result);
+        $this->assertInstanceOf(
+            \Illuminate\Contracts\Pagination\LengthAwarePaginator::class,
+            $result,
+        );
+        $this->assertSame(0, $result->total());
     }
 
 
@@ -408,9 +421,9 @@ class PerformanceHistoryServiceTest extends TestCase
             'draft'
         );
 
-        $result = $this->service->getHistory($user);
+        $result = $this->service->paginateHistory(user: $user);
 
-        $this->assertCount(0, $result);
+        $this->assertSame(0, $result->total());
     }
 
 
@@ -429,9 +442,9 @@ class PerformanceHistoryServiceTest extends TestCase
             'submitted'
         );
 
-        $result = $this->service->getHistory($user);
+        $result = $this->service->paginateHistory(user: $user);
 
-        $this->assertCount(0, $result);
+        $this->assertSame(0, $result->total());
     }
 
 
@@ -450,9 +463,9 @@ class PerformanceHistoryServiceTest extends TestCase
             'rejected'
         );
 
-        $result = $this->service->getHistory($user);
+        $result = $this->service->paginateHistory(user: $user);
 
-        $this->assertCount(0, $result);
+        $this->assertSame(0, $result->total());
     }
 
 
@@ -481,16 +494,16 @@ class PerformanceHistoryServiceTest extends TestCase
             now()->subMonth()->toDateString()
         );
 
-        $result = $this->service->getHistory($user);
+        $result = $this->service->paginateHistory(user: $user);
 
-        $this->assertCount(2, $result);
+        $this->assertSame(2, $result->total());
         $this->assertEquals(
             $newerReview->id,
-            $result->first()->id
+            $result->items()[0]->id
         );
         $this->assertEquals(
             $olderReview->id,
-            $result->last()->id
+            $result->items()[1]->id
         );
     }
 
@@ -509,9 +522,9 @@ class PerformanceHistoryServiceTest extends TestCase
             $user
         );
 
-        $result = $this->service->getHistory($user);
+        $result = $this->service->paginateHistory(user: $user);
 
-        $history = $result->first();
+        $history = $result->items()[0];
 
         $this->assertEquals($review->id, $history->id);
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit;
+namespace Tests\Unit\MasterData;
 
 use App\Models\Attendance;
 use App\Models\Department;

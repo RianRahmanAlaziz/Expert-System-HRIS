@@ -66,6 +66,7 @@ class KnowledgeController extends Controller implements HasMiddleware
         return ApiResponse::success(
             data: KnowledgeResource::make($knowledge),
             message: 'Knowledge berhasil dibuat.',
+            status: 201,
         );
     }
 

@@ -408,7 +408,7 @@ class PositionRequirementServiceTest extends TestCase
             $positionRequirement,
         );
 
-        $this->assertDatabaseMissing(
+        $this->assertSoftDeleted(
             'position_requirements',
             [
                 'id' => $positionRequirement->id,

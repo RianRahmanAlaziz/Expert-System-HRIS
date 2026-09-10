@@ -206,9 +206,9 @@ class PerformanceReviewServiceTest extends TestCase
             ]
         );
 
-        $result = $this->service->getAll($admin);
+        $result = $this->service->paginate(user: $admin);
 
-        $this->assertCount(2, $result);
+        $this->assertSame(2, $result->total());
     }
 
     public function test_admin_can_get_all_performance_reviews(): void
@@ -226,9 +226,9 @@ class PerformanceReviewServiceTest extends TestCase
             $admin
         );
 
-        $result = $this->service->getAll($admin);
+        $result = $this->service->paginate(user: $admin);
 
-        $this->assertCount(1, $result);
+        $this->assertSame(1, $result->total());
     }
 
     public function test_hr_admin_can_get_all_performance_reviews(): void
@@ -246,9 +246,9 @@ class PerformanceReviewServiceTest extends TestCase
             $hrAdmin
         );
 
-        $result = $this->service->getAll($hrAdmin);
+        $result = $this->service->paginate(user: $hrAdmin);
 
-        $this->assertCount(1, $result);
+        $this->assertSame(1, $result->total());
     }
 
     public function test_manager_can_only_get_direct_report_reviews(): void
@@ -284,12 +284,12 @@ class PerformanceReviewServiceTest extends TestCase
             $managerUser
         );
 
-        $result = $this->service->getAll($managerUser);
+        $result = $this->service->paginate(user: $managerUser);
 
-        $this->assertCount(1, $result);
+        $this->assertSame(1, $result->total());
         $this->assertEquals(
             $directReport->id,
-            $result->first()->employee_id
+            $result->items()[0]->employee_id
         );
     }
 
@@ -323,12 +323,12 @@ class PerformanceReviewServiceTest extends TestCase
             ]
         );
 
-        $result = $this->service->getAll($employeeUser);
+        $result = $this->service->paginate(user: $employeeUser);
 
-        $this->assertCount(1, $result);
+        $this->assertSame(1, $result->total());
         $this->assertEquals(
             $employee->id,
-            $result->first()->employee_id
+            $result->items()[0]->employee_id
         );
     }
 
@@ -348,9 +348,9 @@ class PerformanceReviewServiceTest extends TestCase
             $user
         );
 
-        $result = $this->service->getAll($user);
+        $result = $this->service->paginate(user: $user);
 
-        $this->assertCount(0, $result);
+        $this->assertSame(0, $result->total());
     }
 
     /*

@@ -58,16 +58,13 @@ class PerformancePeriodServiceTest extends TestCase
             endDate: '2026-12-31',
         );
 
-        $result = $this->performancePeriodService->getAll();
+        $result = $this->performancePeriodService->paginate();
 
-        $this->assertCount(
-            2,
-            $result
-        );
+        $this->assertSame(2, $result->total());
 
         $this->assertEquals(
             'Performance Review 2026',
-            $result->first()->name
+            $result->items()[0]->name
         );
     }
 
@@ -91,16 +88,23 @@ class PerformancePeriodServiceTest extends TestCase
             endDate: '2027-12-31',
         );
 
-        $result = $this->performancePeriodService->getAll();
+        $result = $this->performancePeriodService->paginate();
+
+        $this->assertSame(3, $result->total());
 
         $this->assertEquals(
             'Performance Review 2027',
-            $result->first()->name
+            $result->items()[0]->name,
+        );
+
+        $this->assertEquals(
+            'Performance Review 2026',
+            $result->items()[1]->name,
         );
 
         $this->assertEquals(
             'Performance Review 2025',
-            $result->last()->name
+            $result->items()[2]->name,
         );
     }
 

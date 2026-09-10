@@ -67,6 +67,7 @@ class ExpertRuleController extends Controller implements HasMiddleware
         return ApiResponse::success(
             data: ExpertRuleResource::make($expertRule),
             message: 'Expert rule berhasil dibuat.',
+            status: 201,
         );
     }
 

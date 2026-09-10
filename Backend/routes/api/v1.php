@@ -69,16 +69,18 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('positions', PositionController::class);
 
     // Position Requirements
-    Route::get('/positions/{positionId}/requirements',    [PositionRequirementController::class, 'byPosition'],);
-    Route::apiResource('position-requirements',  PositionRequirementController::class,);
+    Route::get('/positions/{positionId}/requirements',    [PositionRequirementController::class, 'byPosition']);
+
+    Route::apiResource('position-requirements',  PositionRequirementController::class)->parameters([
+        'position-requirements' => 'positionRequirement',
+    ]);
 
     // Position Requirements Competencies
-    Route::get(
-        '/position-requirements/{positionRequirementId}/competencies',
-        [PositionRequirementCompetencyController::class, 'byRequirement',]
-    );
+    Route::get('/position-requirements/{positionRequirementId}/competencies',   [PositionRequirementCompetencyController::class, 'byRequirement']);
 
-    Route::apiResource('position-requirement-competencies',  PositionRequirementCompetencyController::class);
+    Route::apiResource('position-requirement-competencies',  PositionRequirementCompetencyController::class)->parameters([
+        'position-requirement-competencies' => 'positionRequirementCompetency',
+    ]);
 
     // Employees
     Route::apiResource('employees', EmployeeController::class);
@@ -148,27 +150,35 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('reports',  [PerformanceReportController::class, 'index']);
     });
 
-    //Competency
+    // Competency
     Route::apiResource('competencies', CompetencyController::class);
 
     // Competency Level
-    Route::apiResource('competency-levels', CompetencyLevelController::class);
+    Route::apiResource('competency-levels', CompetencyLevelController::class)->parameters([
+        'competency-levels' => 'competencyLevel',
+    ]);
 
     // Employee Competency
-    Route::apiResource('employee-competencies', EmployeeCompetencyController::class);
+    Route::apiResource('employee-competencies', EmployeeCompetencyController::class)->parameters([
+        'employee-competencies' => 'employeeCompetency',
+    ]);
 
     // Training
     Route::apiResource('trainings', TrainingController::class);
     Route::patch('trainings/{training}/status',   [TrainingController::class, 'updateStatus']);
 
     Route::get('training-participants/history/{employeeId}',  [TrainingParticipantController::class, 'history']);
-    Route::apiResource('training-participants', TrainingParticipantController::class);
+
+    Route::apiResource('training-participants', TrainingParticipantController::class)->parameters([
+        'training-participants' => 'trainingParticipant',
+    ]);
+
     Route::post('training-participants/{trainingParticipant}/evaluate', [TrainingParticipantController::class, 'evaluate']);
 
     // Career
     Route::apiResource('career-paths',   CareerPathController::class,);
-    Route::get('/career-paths/{careerPath}/positions',    [CareerPathPositionController::class, 'byCareerPath'],);
-    Route::apiResource('career-path-positions',  CareerPathPositionController::class,);
+    Route::get('/career-paths/{careerPath}/positions',    [CareerPathPositionController::class, 'byCareerPath']);
+    Route::apiResource('career-path-positions',  CareerPathPositionController::class);
 
     // Promotion Assessment
     Route::get('/promotion-assessments/{promotionAssessment}/items', [PromotionAssessmentItemController::class, 'byAssessment']);

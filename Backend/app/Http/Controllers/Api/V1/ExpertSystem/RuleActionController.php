@@ -63,6 +63,7 @@ class RuleActionController extends Controller implements HasMiddleware
         return ApiResponse::success(
             data: RuleActionResource::make($ruleAction),
             message: 'Rule action berhasil dibuat.',
+            status: 201,
         );
     }
 

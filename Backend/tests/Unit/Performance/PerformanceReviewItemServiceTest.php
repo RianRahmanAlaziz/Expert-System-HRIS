@@ -149,28 +149,30 @@ class PerformanceReviewItemServiceTest extends TestCase
             'comment' => 'Very good performance.',
         ]);
 
-        $result = $this->performanceReviewItemService->getByReview(
-            $review
+        $result = $this->performanceReviewItemService->paginateByReview(
+            review: $review,
         );
 
-        $this->assertCount(2, $result);
+        $this->assertSame(2, $result->total());
+
+        $items = collect($result->items());
 
         $this->assertTrue(
-            $result->every(
+            $items->every(
                 fn(PerformanceReviewItem $item) =>
                 $item->relationLoaded('indicator')
             )
         );
 
         $this->assertTrue(
-            $result->contains(
+            $items->contains(
                 fn(PerformanceReviewItem $item) =>
                 $item->performance_indicator_id === $indicator1->id
             )
         );
 
         $this->assertTrue(
-            $result->contains(
+            $items->contains(
                 fn(PerformanceReviewItem $item) =>
                 $item->performance_indicator_id === $indicator2->id
             )

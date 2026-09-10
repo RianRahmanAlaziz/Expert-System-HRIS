@@ -24,7 +24,7 @@ class PerformanceReviewService
         ?string $reviewType = null,
         ?string $status = null,
     ): LengthAwarePaginator {
-        return PerformanceReview::query()
+        $query = PerformanceReview::query()
             ->with([
                 'employee',
                 'period',
@@ -44,83 +44,64 @@ class PerformanceReviewService
                                         ->orWhere('last_name', 'like', "%{$search}%")
                                         ->orWhere('employee_number', 'like', "%{$search}%");
                                 },
-                            )
-                            ->orWhereHas(
+                            )->orWhereHas(
                                 'reviewer',
                                 function ($query) use ($search): void {
-                                    $query->where(
-                                        'name',
-                                        'like',
-                                        "%{$search}%",
-                                    );
+                                    $query->where('name', 'like', "%{$search}%");
                                 },
                             );
                     });
                 },
-            )
-            ->when(
+            )->when(
                 $employeeId !== null,
-                fn($query) => $query->where(
-                    'employee_id',
-                    $employeeId,
-                ),
-            )
-            ->when(
+                fn($query) => $query->where('employee_id', $employeeId),
+            )->when(
                 $performancePeriodId !== null,
-                fn($query) => $query->where(
-                    'performance_period_id',
-                    $performancePeriodId,
-                ),
-            )
-            ->when(
+                fn($query) => $query->where('performance_period_id', $performancePeriodId),
+            )->when(
                 $reviewType !== null,
-                fn($query) => $query->where(
-                    'review_type',
-                    $reviewType,
-                ),
-            )
-            ->when(
+                fn($query) => $query->where('review_type',   $reviewType),
+            )->when(
                 $status !== null,
-                fn($query) => $query->where(
-                    'status',
-                    $status,
-                ),
-            )
-            ->when(
-                $user->hasRole('manager'),
-                function ($query) use ($user): void {
-                    $query->whereHas(
-                        'employee',
-                        function ($query) use ($user): void {
-                            $query->whereHas(
-                                'manager',
-                                function ($query) use ($user): void {
-                                    $query->where(
-                                        'user_id',
-                                        $user->id,
-                                    );
-                                },
-                            );
-                        },
-                    );
-                },
-            )
-            ->when(
-                $user->hasRole('employee'),
-                function ($query) use ($user): void {
-                    $query->whereHas(
-                        'employee',
-                        function ($query) use ($user): void {
-                            $query->where(
-                                'user_id',
-                                $user->id,
-                            );
-                        },
-                    );
-                },
-            )
-            ->latest('id')
-            ->paginate($perPage);
+                fn($query) => $query->where('status',   $status)
+            );
+
+        if (
+            $user->hasAnyRole([
+                'super-admin',
+                'admin',
+                'hr-admin',
+            ])
+        ) {
+            return $query->latest('id')->paginate($perPage);
+        }
+
+        if ($user->hasRole('manager')) {
+            return $query
+                ->whereHas(
+                    'employee',
+                    function ($query) use ($user): void {
+                        $query->whereHas(
+                            'manager',
+                            function ($query) use ($user): void {
+                                $query->where('user_id',  $user->id);
+                            },
+                        );
+                    },
+                )->latest('id')->paginate($perPage);
+        }
+
+        if ($user->hasRole('employee')) {
+            return $query
+                ->whereHas(
+                    'employee',
+                    function ($query) use ($user): void {
+                        $query->where('user_id',   $user->id);
+                    },
+                )->latest('id')->paginate($perPage);
+        }
+
+        return $query->whereRaw('1 = 0')->latest('id')->paginate($perPage);
     }
 
     public function getById(int $id): PerformanceReview
