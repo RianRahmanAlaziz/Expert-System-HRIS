@@ -93,6 +93,7 @@ class CareerPathController extends Controller implements HasMiddleware
         return ApiResponse::success(
             data: new CareerPathResource($careerPath),
             message: 'Career path berhasil dibuat.',
+            status: 201,
         );
     }
 

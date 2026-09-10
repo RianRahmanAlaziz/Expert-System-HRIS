@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Career\StoreCareerPathPositionRequest;
 use App\Http\Requests\Career\UpdateCareerPathPositionRequest;
 use App\Http\Resources\V1\Career\CareerPathPositionResource;
+use App\Models\CareerPath;
 use App\Models\CareerPathPosition;
 use App\Services\Career\CareerPathPositionService;
 use App\Support\ApiResponse;
@@ -95,10 +96,9 @@ class CareerPathPositionController extends Controller implements HasMiddleware
         );
 
         return ApiResponse::success(
-            data: new CareerPathPositionResource(
-                $careerPathPosition,
-            ),
+            data: new CareerPathPositionResource($careerPathPosition),
             message: 'Position pada career path berhasil ditambahkan.',
+            status: 201,
         );
     }
 
@@ -118,15 +118,13 @@ class CareerPathPositionController extends Controller implements HasMiddleware
     }
 
     public function byCareerPath(
-        int $careerPathId,
+        CareerPath $careerPath,
     ): JsonResponse {
         $careerPathPositions = $this->careerPathPositionService
-            ->findByCareerPathId($careerPathId);
+            ->findByCareerPathId($careerPath->id);
 
         return ApiResponse::success(
-            data: CareerPathPositionResource::collection(
-                $careerPathPositions,
-            ),
+            data: CareerPathPositionResource::collection($careerPathPositions),
             message: 'Daftar position pada career path berhasil diambil.',
         );
     }
