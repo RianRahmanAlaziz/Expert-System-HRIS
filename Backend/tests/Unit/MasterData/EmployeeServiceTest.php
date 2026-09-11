@@ -110,7 +110,7 @@ class EmployeeServiceTest extends TestCase
             'department_id' => $department->id,
             'position_id' => $position->id,
             'employment_type' => 'full_time',
-            'start_date' => '2026-01-01',
+            'start_date' => '2026-01-01 00:00:00',
         ]);
     }
 

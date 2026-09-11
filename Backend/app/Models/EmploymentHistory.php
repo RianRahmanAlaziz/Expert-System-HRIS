@@ -20,6 +20,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EmploymentHistory extends Model
 {
+    protected function casts(): array
+    {
+        return [
+            'start_date' => 'date',
+            'end_date' => 'date',
+        ];
+    }
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);

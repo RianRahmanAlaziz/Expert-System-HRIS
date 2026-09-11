@@ -52,4 +52,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(PromotionAssessment::class, 'assessed_by',);
     }
+    public function expertConsultations(): HasMany
+    {
+        return $this->hasMany(ExpertConsultation::class);
+    }
 }

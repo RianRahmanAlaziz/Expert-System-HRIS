@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Career\CareerPathPositionController;
 use App\Http\Controllers\Api\V1\Competency\CompetencyController;
 use App\Http\Controllers\Api\V1\Competency\CompetencyLevelController;
 use App\Http\Controllers\Api\V1\Competency\EmployeeCompetencyController;
+use App\Http\Controllers\Api\V1\Consultation\ExpertConsultationController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\EmployeeController;
 use App\Http\Controllers\Api\V1\ExpertSystem\ExpertRuleController;
@@ -191,4 +192,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('expert-rules',  ExpertRuleController::class);
     Route::apiResource('rule-conditions',   RuleConditionController::class);
     Route::apiResource('rule-actions',  RuleActionController::class);
+
+    // Consulation
+    Route::apiResource('expert-consultations',   ExpertConsultationController::class)->only([
+        'index',
+        'store',
+        'show',
+    ]);
 });

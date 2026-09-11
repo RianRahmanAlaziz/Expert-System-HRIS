@@ -28,6 +28,14 @@ class Employee extends Model
 {
     use SoftDeletes;
 
+    protected function casts(): array
+    {
+        return [
+            'birth_date' => 'date',
+            'join_date' => 'date',
+        ];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -91,5 +99,10 @@ class Employee extends Model
     public function promotionAssessments(): HasMany
     {
         return $this->hasMany(PromotionAssessment::class);
+    }
+
+    public function expertConsultations(): HasMany
+    {
+        return $this->hasMany(ExpertConsultation::class);
     }
 }
