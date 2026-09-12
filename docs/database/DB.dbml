@@ -3,6 +3,11 @@ Project HRIS_Expert_System {
   Note: "Enterprise HRIS + Rule-Based Expert System"
 }
 
+
+// ============================================================
+// AUTHENTICATION & AUTHORIZATION
+// ============================================================
+
 Table users {
   id bigint [pk, increment]
   name varchar(255)
@@ -68,6 +73,11 @@ Table role_has_permissions {
   }
 }
 
+
+// ============================================================
+// ORGANIZATION
+// ============================================================
+
 Table departments {
   id bigint [pk, increment]
   code varchar(50) [unique]
@@ -126,6 +136,11 @@ Table employment_histories {
   updated_at timestamp
 }
 
+
+// ============================================================
+// ATTENDANCE
+// ============================================================
+
 Table attendances {
   id bigint [pk, increment]
   employee_id bigint
@@ -143,6 +158,11 @@ Table attendances {
     (employee_id, attendance_date) [unique]
   }
 }
+
+
+// ============================================================
+// LEAVE & PERMISSION
+// ============================================================
 
 Table leave_types {
   id bigint [pk, increment]
@@ -170,6 +190,27 @@ Table leave_requests {
   created_at timestamp
   updated_at timestamp
 }
+
+Table leave_balances {
+  id bigint [pk, increment]
+  employee_id bigint
+  leave_type_id bigint
+  year int
+  allocated_days decimal(5,2) [default: 0]
+  used_days decimal(5,2) [default: 0]
+  remaining_days decimal(5,2) [default: 0]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (employee_id, leave_type_id, year) [unique]
+  }
+}
+
+
+// ============================================================
+// PERFORMANCE
+// ============================================================
 
 Table performance_periods {
   id bigint [pk, increment]
@@ -224,6 +265,11 @@ Table performance_review_items {
   updated_at timestamp
 }
 
+
+// ============================================================
+// COMPETENCY
+// ============================================================
+
 Table competencies {
   id bigint [pk, increment]
   code varchar(50) [unique]
@@ -261,6 +307,11 @@ Table employee_competencies {
   }
 }
 
+
+// ============================================================
+// TRAINING
+// ============================================================
+
 Table trainings {
   id bigint [pk, increment]
   code varchar(50) [unique]
@@ -292,6 +343,184 @@ Table training_participants {
     (training_id, employee_id) [unique]
   }
 }
+
+
+// ============================================================
+// PHASE 9 — CAREER & PROMOTION
+// ============================================================
+
+
+// ------------------------------------------------------------
+// Position Requirements
+// ------------------------------------------------------------
+
+Table position_requirements {
+  id bigint [pk, increment]
+
+  position_id bigint
+
+  minimum_experience_years decimal(5,2) [default: 0]
+  minimum_performance_score decimal(5,2) [null]
+  minimum_attendance_percentage decimal(5,2) [null]
+
+  description text [null]
+
+  status varchar(30)
+  is_active boolean [default: true]
+
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    position_id
+    (position_id, is_active)
+  }
+}
+
+
+// ------------------------------------------------------------
+// Position Requirement Competencies
+// ------------------------------------------------------------
+
+Table position_requirement_competencies {
+  id bigint [pk, increment]
+
+  position_requirement_id bigint
+  competency_id bigint
+  required_level_id bigint [null]
+
+  minimum_score decimal(5,2) [null]
+  weight decimal(5,2) [default: 0]
+  is_required boolean [default: true]
+
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (position_requirement_id, competency_id) [unique]
+    competency_id
+    required_level_id
+  }
+}
+
+
+// ------------------------------------------------------------
+// Career Paths
+// ------------------------------------------------------------
+
+Table career_paths {
+  id bigint [pk, increment]
+
+  name varchar(150)
+  description text [null]
+
+  status varchar(30)
+  is_active boolean [default: true]
+
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    name
+    is_active
+  }
+}
+
+
+// ------------------------------------------------------------
+// Career Path Positions
+// ------------------------------------------------------------
+
+Table career_path_positions {
+  id bigint [pk, increment]
+
+  career_path_id bigint
+  position_id bigint
+  sequence int
+
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (career_path_id, position_id) [unique]
+    (career_path_id, sequence) [unique]
+    position_id
+  }
+}
+
+
+// ------------------------------------------------------------
+// Promotion Assessments
+// ------------------------------------------------------------
+
+Table promotion_assessments {
+  id bigint [pk, increment]
+
+  employee_id bigint
+
+  current_position_id bigint
+  target_position_id bigint
+
+  assessed_by bigint
+
+  assessment_date date
+
+  status varchar(30)
+
+  overall_score decimal(5,2) [null]
+
+  recommendation varchar(30) [null]
+
+  notes text [null]
+
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    employee_id
+    current_position_id
+    target_position_id
+    assessed_by
+    assessment_date
+    status
+  }
+}
+
+
+// ------------------------------------------------------------
+// Promotion Assessment Items
+// ------------------------------------------------------------
+
+Table promotion_assessment_items {
+  id bigint [pk, increment]
+
+  promotion_assessment_id bigint
+
+  criterion_type varchar(50)
+  criterion_code varchar(100)
+  criterion_name varchar(150)
+
+  score decimal(5,2) [null]
+  weight decimal(5,2) [default: 0]
+
+  is_passed boolean [null]
+
+  notes text [null]
+
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    promotion_assessment_id
+    (promotion_assessment_id, criterion_code) [unique]
+    criterion_type
+  }
+}
+
+
+// ============================================================
+// EXPERT SYSTEM
+// ============================================================
 
 Table knowledge_categories {
   id bigint [pk, increment]
@@ -374,6 +603,11 @@ Table consultation_results {
   updated_at timestamp
 }
 
+
+// ============================================================
+// SYSTEM
+// ============================================================
+
 Table notifications {
   id bigint [pk, increment]
   user_id bigint
@@ -400,21 +634,54 @@ Table activity_logs {
   updated_at timestamp
 }
 
+
+// ============================================================
+// RELATIONSHIPS — AUTH
+// ============================================================
+
 Ref: model_has_roles.role_id > roles.id
 Ref: model_has_permissions.permission_id > permissions.id
 Ref: role_has_permissions.permission_id > permissions.id
 Ref: role_has_permissions.role_id > roles.id
+
+
+// ============================================================
+// RELATIONSHIPS — ORGANIZATION
+// ============================================================
 
 Ref: employees.user_id - users.id
 Ref: employees.department_id > departments.id
 Ref: employees.position_id > positions.id
 Ref: employees.manager_id > employees.id
 
+Ref: employment_histories.employee_id > employees.id
+Ref: employment_histories.department_id > departments.id
+Ref: employment_histories.position_id > positions.id
+Ref: employment_histories.manager_id > employees.id
+
+
+// ============================================================
+// RELATIONSHIPS — ATTENDANCE
+// ============================================================
+
 Ref: attendances.employee_id > employees.id
+
+
+// ============================================================
+// RELATIONSHIPS — LEAVE
+// ============================================================
 
 Ref: leave_requests.employee_id > employees.id
 Ref: leave_requests.leave_type_id > leave_types.id
 Ref: leave_requests.approved_by > users.id
+
+Ref: leave_balances.employee_id > employees.id
+Ref: leave_balances.leave_type_id > leave_types.id
+
+
+// ============================================================
+// RELATIONSHIPS — PERFORMANCE
+// ============================================================
 
 Ref: performance_reviews.employee_id > employees.id
 Ref: performance_reviews.performance_period_id > performance_periods.id
@@ -423,30 +690,81 @@ Ref: performance_reviews.reviewer_id > users.id
 Ref: performance_review_items.performance_review_id > performance_reviews.id
 Ref: performance_review_items.performance_indicator_id > performance_indicators.id
 
+
+// ============================================================
+// RELATIONSHIPS — COMPETENCY
+// ============================================================
+
 Ref: employee_competencies.employee_id > employees.id
 Ref: employee_competencies.competency_id > competencies.id
 Ref: employee_competencies.competency_level_id > competency_levels.id
 Ref: employee_competencies.assessed_by > users.id
 
-Ref: employment_histories.employee_id > employees.id
-Ref: employment_histories.department_id > departments.id
-Ref: employment_histories.position_id > positions.id
-Ref: employment_histories.manager_id > employees.id
+
+// ============================================================
+// RELATIONSHIPS — TRAINING
+// ============================================================
 
 Ref: training_participants.training_id > trainings.id
 Ref: training_participants.employee_id > employees.id
 
+
+// ============================================================
+// RELATIONSHIPS — PHASE 9 CAREER & PROMOTION
+// ============================================================
+
+// Position Requirement
+Ref: position_requirements.position_id > positions.id
+
+// Position Requirement Competencies
+Ref: position_requirement_competencies.position_requirement_id > position_requirements.id
+Ref: position_requirement_competencies.competency_id > competencies.id
+Ref: position_requirement_competencies.required_level_id > competency_levels.id
+
+// Career Path
+Ref: career_path_positions.career_path_id > career_paths.id
+Ref: career_path_positions.position_id > positions.id
+
+// Promotion Assessment
+Ref: promotion_assessments.employee_id > employees.id
+Ref: promotion_assessments.current_position_id > positions.id
+Ref: promotion_assessments.target_position_id > positions.id
+Ref: promotion_assessments.assessed_by > users.id
+
+// Promotion Assessment Items
+Ref: promotion_assessment_items.promotion_assessment_id > promotion_assessments.id
+
+
+// ============================================================
+// RELATIONSHIPS — EXPERT SYSTEM
+// ============================================================
+
 Ref: knowledges.knowledge_category_id > knowledge_categories.id
+
 Ref: expert_rules.knowledge_id > knowledges.id
+
 Ref: rule_conditions.expert_rule_id > expert_rules.id
+
 Ref: rule_actions.expert_rule_id > expert_rules.id
 
 Ref: expert_consultations.employee_id > employees.id
 Ref: expert_consultations.user_id > users.id
+
 Ref: consultation_results.expert_consultation_id - expert_consultations.id
 
+
+// ============================================================
+// RELATIONSHIPS — SYSTEM
+// ============================================================
+
 Ref: notifications.user_id > users.id
+
 Ref: activity_logs.user_id > users.id
+
+
+// ============================================================
+// TABLE GROUPS
+// ============================================================
 
 TableGroup "AUTH" {
   users
@@ -461,12 +779,14 @@ TableGroup "ORGANIZATION" {
   departments
   positions
   employees
+  employment_histories
 }
 
 TableGroup "ATTENDANCE & LEAVE" {
   attendances
   leave_types
   leave_requests
+  leave_balances
 }
 
 TableGroup "PERFORMANCE" {
@@ -485,6 +805,15 @@ TableGroup "COMPETENCY" {
 TableGroup "TRAINING" {
   trainings
   training_participants
+}
+
+TableGroup "CAREER & PROMOTION" {
+  position_requirements
+  position_requirement_competencies
+  career_paths
+  career_path_positions
+  promotion_assessments
+  promotion_assessment_items
 }
 
 TableGroup "EXPERT SYSTEM" {

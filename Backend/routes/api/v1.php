@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\V1\Position\PositionRequirementController;
 use App\Http\Controllers\Api\V1\PositionController;
 use App\Http\Controllers\Api\V1\Promotion\PromotionAssessmentController;
 use App\Http\Controllers\Api\V1\Promotion\PromotionAssessmentItemController;
+use App\Http\Controllers\Api\V1\Recommendation\RecommendationController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\Training\TrainingController;
 use App\Http\Controllers\Api\V1\Training\TrainingParticipantController;
@@ -199,4 +200,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         'store',
         'show',
     ]);
+
+    // Recommendation
+    Route::apiResource('recommendations', RecommendationController::class)->only([
+        'index',
+        'store',
+        'show',
+    ]);
+
+    Route::patch('recommendations/{recommendation}/status',   [RecommendationController::class, 'updateStatus']);
 });

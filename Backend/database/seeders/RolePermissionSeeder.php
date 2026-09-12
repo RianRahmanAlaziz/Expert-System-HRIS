@@ -201,6 +201,11 @@ class RolePermissionSeeder extends Seeder
             'rule_action.create',
             'rule_action.update',
             'rule_action.delete',
+
+            // Recommendation
+            'recommendation.view',
+            'recommendation.create',
+            'recommendation.update',
         ];
 
         foreach ($permissions as $permission) {
@@ -421,6 +426,11 @@ class RolePermissionSeeder extends Seeder
             'rule_action.create',
             'rule_action.update',
             'rule_action.delete',
+
+            // Recommendation
+            'recommendation.view',
+            'recommendation.create',
+            'recommendation.update',
         ]);
 
         /*
@@ -452,6 +462,7 @@ class RolePermissionSeeder extends Seeder
 
             // Performance Report
             'performance_report.view',
+
             // Training
             'training.view',
             'training.participant.view',
@@ -459,6 +470,10 @@ class RolePermissionSeeder extends Seeder
             'training.evaluation.view',
             'training.evaluation.create',
             'training.evaluation.update',
+
+            // Recommendation
+            'recommendation.view',
+            'recommendation.update',
         ]);
 
         /*

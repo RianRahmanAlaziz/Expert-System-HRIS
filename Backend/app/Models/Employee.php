@@ -105,4 +105,9 @@ class Employee extends Model
     {
         return $this->hasMany(ExpertConsultation::class);
     }
+
+    public function recommendations(): HasMany
+    {
+        return $this->hasMany(Recommendation::class);
+    }
 }
