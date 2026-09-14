@@ -7,11 +7,15 @@ use App\Http\Controllers\Api\V1\Career\CareerPathController;
 use App\Http\Controllers\Api\V1\Career\CareerPathPositionController;
 use App\Http\Controllers\Api\V1\Competency\CompetencyController;
 use App\Http\Controllers\Api\V1\Competency\CompetencyLevelController;
+use App\Http\Controllers\Api\V1\Competency\CompetencyReportController;
 use App\Http\Controllers\Api\V1\Competency\EmployeeCompetencyController;
 use App\Http\Controllers\Api\V1\Consultation\ExpertConsultationController;
+use App\Http\Controllers\Api\V1\Dashboard\EmployeeReportController;
+use App\Http\Controllers\Api\V1\Dashboard\HrDashboardController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\EmployeeController;
 use App\Http\Controllers\Api\V1\ExpertSystem\ExpertRuleController;
+use App\Http\Controllers\Api\V1\ExpertSystem\ExpertSystemReportController;
 use App\Http\Controllers\Api\V1\ExpertSystem\KnowledgeCategoryController;
 use App\Http\Controllers\Api\V1\ExpertSystem\KnowledgeController;
 use App\Http\Controllers\Api\V1\ExpertSystem\RuleActionController;
@@ -34,6 +38,7 @@ use App\Http\Controllers\Api\V1\PositionController;
 use App\Http\Controllers\Api\V1\Promotion\PromotionAssessmentController;
 use App\Http\Controllers\Api\V1\Promotion\PromotionAssessmentItemController;
 use App\Http\Controllers\Api\V1\Recommendation\RecommendationController;
+use App\Http\Controllers\Api\V1\Recommendation\RecommendationReportController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\Training\TrainingController;
 use App\Http\Controllers\Api\V1\Training\TrainingParticipantController;
@@ -209,4 +214,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
     ]);
 
     Route::patch('recommendations/{recommendation}/status',   [RecommendationController::class, 'updateStatus']);
+
+    // Dashboard
+    Route::get('dashboard/hr', [HrDashboardController::class, 'index']);
+    Route::get('reports/employees',  [EmployeeReportController::class, 'index']);
+    Route::get('reports/competencies', [CompetencyReportController::class, 'index']);
+    Route::get('reports/expert-system',   ExpertSystemReportController::class);
+    Route::get('reports/recommendations',   RecommendationReportController::class);
 });
