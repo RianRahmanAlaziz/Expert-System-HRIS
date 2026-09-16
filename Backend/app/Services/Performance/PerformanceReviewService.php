@@ -5,6 +5,8 @@ namespace App\Services\Performance;
 use App\Models\Employee;
 use App\Models\PerformanceReview;
 use App\Models\User;
+use App\Notifications\PerformanceReviewApproved;
+use App\Notifications\PerformanceReviewRejected;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -278,6 +280,10 @@ class PerformanceReviewService
         $review->status = 'approved';
         $review->save();
 
+        $review->employee->user->notify(
+            new PerformanceReviewApproved($review),
+        );
+
         return $review->refresh()->load([
             'employee',
             'period',
@@ -299,6 +305,9 @@ class PerformanceReviewService
         $review->status = 'rejected';
         $review->save();
 
+        $review->employee->user->notify(
+            new PerformanceReviewRejected($review),
+        );
         return $review->refresh()->load([
             'employee',
             'period',

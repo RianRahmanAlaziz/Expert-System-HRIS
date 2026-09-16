@@ -7,6 +7,9 @@ use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use App\Models\User;
+use App\Notifications\LeaveRequestApproved;
+use App\Notifications\LeaveRequestRejected;
+use App\Notifications\LeaveRequestSubmitted;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -148,6 +151,12 @@ class LeaveRequestService
                     'status' => 'pending',
                 ]);
 
+                if ($leaveRequest->employee->manager?->user) {
+                    $leaveRequest->employee->manager->user->notify(
+                        new LeaveRequestSubmitted($leaveRequest),
+                    );
+                }
+
                 return $leaveRequest->load([
                     'employee',
                     'leaveType',
@@ -204,7 +213,9 @@ class LeaveRequestService
                     'approved_at' => now(),
                     'rejection_reason' => null,
                 ]);
-
+                $leaveRequest->employee->user->notify(
+                    new LeaveRequestApproved($leaveRequest),
+                );
                 return $leaveRequest
                     ->refresh()
                     ->load([
@@ -239,6 +250,10 @@ class LeaveRequestService
                     'approved_at' => null,
                     'rejection_reason' => $rejectionReason,
                 ]);
+
+                $leaveRequest->employee->user->notify(
+                    new LeaveRequestRejected($leaveRequest),
+                );
 
                 return $leaveRequest
                     ->refresh()

@@ -48,12 +48,24 @@ class User extends Authenticatable
     {
         return $this->hasMany(EmployeeCompetency::class, 'assessed_by');
     }
+
     public function promotionAssessments(): HasMany
     {
         return $this->hasMany(PromotionAssessment::class, 'assessed_by',);
     }
+
     public function expertConsultations(): HasMany
     {
         return $this->hasMany(ExpertConsultation::class);
+    }
+
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
+
+    public function uploadedDocuments(): HasMany
+    {
+        return $this->hasMany(Document::class,  'uploaded_by');
     }
 }

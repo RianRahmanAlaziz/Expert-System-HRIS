@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\Leave\LeaveBalanceController;
 use App\Http\Controllers\Api\V1\Leave\LeaveReportController;
 use App\Http\Controllers\Api\V1\Leave\LeaveRequestController;
 use App\Http\Controllers\Api\V1\Leave\LeaveTypeController;
+use App\Http\Controllers\Api\V1\Notification\NotificationController;
 use App\Http\Controllers\Api\V1\Performance\PerformanceHistoryController;
 use App\Http\Controllers\Api\V1\Performance\PerformanceIndicatorController;
 use App\Http\Controllers\Api\V1\Performance\PerformancePeriodController;
@@ -40,6 +41,8 @@ use App\Http\Controllers\Api\V1\Promotion\PromotionAssessmentItemController;
 use App\Http\Controllers\Api\V1\Recommendation\RecommendationController;
 use App\Http\Controllers\Api\V1\Recommendation\RecommendationReportController;
 use App\Http\Controllers\Api\V1\RoleController;
+use App\Http\Controllers\Api\V1\SystemSupport\ActivityLogController;
+use App\Http\Controllers\Api\V1\SystemSupport\DocumentController;
 use App\Http\Controllers\Api\V1\Training\TrainingController;
 use App\Http\Controllers\Api\V1\Training\TrainingParticipantController;
 use Illuminate\Support\Facades\Route;
@@ -221,4 +224,26 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('reports/competencies', [CompetencyReportController::class, 'index']);
     Route::get('reports/expert-system',   ExpertSystemReportController::class);
     Route::get('reports/recommendations',   RecommendationReportController::class);
+
+    // System Support
+    Route::apiResource('activity-logs', ActivityLogController::class)->only(['index', 'show']);
+
+    // Documents
+    Route::apiResource('documents', DocumentController::class)->only([
+        'index',
+        'store',
+        'show',
+        'destroy',
+    ]);
+
+    Route::get('/documents/{document}/download',  [DocumentController::class, 'download']);
+
+    // Notification
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::get('/{notification}', [NotificationController::class, 'show']);
+        Route::patch('/{notification}/read', [NotificationController::class,  'markAsRead']);
+        Route::delete('/{notification}', [NotificationController::class, 'destroy']);
+    });
 });

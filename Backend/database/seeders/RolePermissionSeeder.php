@@ -213,6 +213,17 @@ class RolePermissionSeeder extends Seeder
             'competency_report.view',
             'expert_system_report.view',
             'recommendation_report.view',
+
+            // System Support
+            'activity_log.view',
+            'document.view',
+            'document.create',
+            'document.delete',
+
+            // Notification
+            'notification.view',
+            'notification.read',
+            'notification.delete',
         ];
 
         foreach ($permissions as $permission) {
@@ -445,6 +456,17 @@ class RolePermissionSeeder extends Seeder
             'competency_report.view',
             'expert_system_report.view',
             'recommendation_report.view',
+
+            // System Support
+            'activity_log.view',
+            'document.view',
+            'document.create',
+            'document.delete',
+
+            // Notification
+            'notification.view',
+            'notification.read',
+            'notification.delete',
         ]);
 
         /*
@@ -495,6 +517,10 @@ class RolePermissionSeeder extends Seeder
             'competency_report.view',
             'expert_system_report.view',
             'recommendation_report.view',
+
+            // Notification
+            'notification.view',
+            'notification.read',
         ]);
 
         /*
@@ -533,9 +559,14 @@ class RolePermissionSeeder extends Seeder
             'performance_review.create',
             'performance_review.update',
             'performance_review.submit',
+
             // Training
             'training.view',
             'training.history.view',
+
+            // Notification
+            'notification.view',
+            'notification.read',
         ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

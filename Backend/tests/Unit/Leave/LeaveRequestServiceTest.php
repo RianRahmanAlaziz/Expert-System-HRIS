@@ -9,10 +9,14 @@ use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use App\Models\Position;
 use App\Models\User;
+use App\Notifications\LeaveRequestApproved;
+use App\Notifications\LeaveRequestRejected;
+use App\Notifications\LeaveRequestSubmitted;
 use App\Services\Leave\LeaveRequestService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Notification;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -56,6 +60,8 @@ class LeaveRequestServiceTest extends TestCase
         string $employeeNumber = 'EMP-001',
         ?Department $department = null,
         ?Position $position = null,
+        ?User $user = null,
+        ?Employee $manager = null,
     ): Employee {
         $department ??= $this->createDepartment();
         $position ??= $this->createPosition();
@@ -64,6 +70,8 @@ class LeaveRequestServiceTest extends TestCase
             'department_id' => $department->id,
             'position_id' => $position->id,
             'employee_number' => $employeeNumber,
+            'user_id' => $user?->id,
+            'manager_id' => $manager?->id,
             'first_name' => 'John',
             'last_name' => 'Doe',
             'gender' => 'male',
@@ -604,7 +612,12 @@ class LeaveRequestServiceTest extends TestCase
 
     public function test_it_can_approve_leave_request(): void
     {
-        $employee = $this->createEmployee();
+        $employeeUser = User::factory()->create();
+
+        $employee = $this->createEmployee(
+            user: $employeeUser,
+        );
+
         $leaveType = $this->createLeaveType();
         $approver = User::factory()->create();
 
@@ -630,23 +643,16 @@ class LeaveRequestServiceTest extends TestCase
             approvedBy: $approver,
         );
 
-        $this->assertSame(
-            'approved',
-            $result->status
-        );
+        $this->assertSame('approved', $result->status);
 
         $this->assertSame(
             $approver->id,
             $result->approved_by
         );
 
-        $this->assertNotNull(
-            $result->approved_at
-        );
+        $this->assertNotNull($result->approved_at);
 
-        $this->assertNull(
-            $result->rejection_reason
-        );
+        $this->assertNull($result->rejection_reason);
 
         $this->assertDatabaseHas('leave_balances', [
             'id' => $leaveBalance->id,
@@ -740,7 +746,12 @@ class LeaveRequestServiceTest extends TestCase
 
     public function test_it_can_reject_leave_request(): void
     {
-        $employee = $this->createEmployee();
+        $employeeUser = User::factory()->create();
+
+        $employee = $this->createEmployee(
+            user: $employeeUser,
+        );
+
         $leaveType = $this->createLeaveType();
         $rejector = User::factory()->create();
 
@@ -755,19 +766,14 @@ class LeaveRequestServiceTest extends TestCase
             rejectionReason: 'Project deadline.',
         );
 
-        $this->assertSame(
-            'rejected',
-            $result->status
-        );
+        $this->assertSame('rejected', $result->status);
 
         $this->assertSame(
             $rejector->id,
             $result->approved_by
         );
 
-        $this->assertNull(
-            $result->approved_at
-        );
+        $this->assertNull($result->approved_at);
 
         $this->assertSame(
             'Project deadline.',
@@ -900,6 +906,117 @@ class LeaveRequestServiceTest extends TestCase
         $this->leaveRequestService->cancel(
             leaveRequest: $leaveRequest,
             employee: $employee,
+        );
+    }
+
+
+    public function test_it_sends_submitted_notification_to_manager(): void
+    {
+        Notification::fake();
+
+        $department = $this->createDepartment();
+        $position = $this->createPosition();
+
+        $managerUser = User::factory()->create();
+
+        $managerEmployee = $this->createEmployee(
+            employeeNumber: 'EMP-MANAGER',
+            department: $department,
+            position: $position,
+            user: $managerUser,
+        );
+
+        $employeeUser = User::factory()->create();
+
+        $employee = $this->createEmployee(
+            employeeNumber: 'EMP-001',
+            department: $department,
+            position: $position,
+            user: $employeeUser,
+            manager: $managerEmployee,
+        );
+
+        $leaveType = $this->createLeaveType();
+
+        $this->leaveRequestService->create(
+            employee: $employee,
+            data: [
+                'leave_type_id' => $leaveType->id,
+                'start_date' => '2026-03-10',
+                'end_date' => '2026-03-12',
+                'reason' => 'Family event.',
+            ],
+        );
+
+        Notification::assertSentTo(
+            $managerUser,
+            LeaveRequestSubmitted::class,
+        );
+    }
+
+    public function test_it_sends_approved_notification_to_employee(): void
+    {
+        Notification::fake();
+
+        $employeeUser = User::factory()->create();
+
+        $employee = $this->createEmployee(
+            user: $employeeUser,
+        );
+
+        $leaveType = $this->createLeaveType();
+
+        $this->createLeaveBalance(
+            employee: $employee,
+            leaveType: $leaveType,
+        );
+
+        $leaveRequest = $this->createLeaveRequest(
+            employee: $employee,
+            leaveType: $leaveType,
+        );
+
+        $approver = User::factory()->create();
+
+        $this->leaveRequestService->approve(
+            leaveRequest: $leaveRequest,
+            approvedBy: $approver,
+        );
+
+        Notification::assertSentTo(
+            $employeeUser,
+            LeaveRequestApproved::class,
+        );
+    }
+
+    public function test_it_sends_rejected_notification_to_employee(): void
+    {
+        Notification::fake();
+
+        $employeeUser = User::factory()->create();
+
+        $employee = $this->createEmployee(
+            user: $employeeUser,
+        );
+
+        $leaveType = $this->createLeaveType();
+
+        $leaveRequest = $this->createLeaveRequest(
+            employee: $employee,
+            leaveType: $leaveType,
+        );
+
+        $rejector = User::factory()->create();
+
+        $this->leaveRequestService->reject(
+            leaveRequest: $leaveRequest,
+            rejectedBy: $rejector,
+            rejectionReason: 'Project deadline.',
+        );
+
+        Notification::assertSentTo(
+            $employeeUser,
+            LeaveRequestRejected::class,
         );
     }
 }

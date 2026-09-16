@@ -10,9 +10,12 @@ use App\Models\PerformanceReview;
 use App\Models\PerformanceReviewItem;
 use App\Models\Position;
 use App\Models\User;
+use App\Notifications\PerformanceReviewApproved;
+use App\Notifications\PerformanceReviewRejected;
 use App\Services\EmployeeService;
 use App\Services\Performance\PerformanceReviewService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use InvalidArgumentException;
 use Tests\TestCase;
 use Spatie\Permission\Models\Role;
@@ -1901,6 +1904,76 @@ class PerformanceReviewServiceTest extends TestCase
         $this->service->reject(
             $user,
             $review
+        );
+    }
+
+    public function test_it_sends_approved_notification_to_employee(): void
+    {
+        Notification::fake();
+
+        $admin = $this->createUser('admin');
+
+        $employeeUser = User::factory()->create();
+
+        $employee = $this->createEmployee(
+            $employeeUser
+        );
+
+        $period = $this->createPeriod();
+
+        $review = $this->createReview(
+            $employee,
+            $period,
+            $admin,
+            [
+                'status' => 'submitted',
+                'overall_score' => 85,
+            ]
+        );
+
+        $this->service->approve(
+            $admin,
+            $review
+        );
+
+        Notification::assertSentTo(
+            $employeeUser,
+            PerformanceReviewApproved::class,
+        );
+    }
+
+    public function test_it_sends_rejected_notification_to_employee(): void
+    {
+        Notification::fake();
+
+        $admin = $this->createUser('admin');
+
+        $employeeUser = User::factory()->create();
+
+        $employee = $this->createEmployee(
+            $employeeUser
+        );
+
+        $period = $this->createPeriod();
+
+        $review = $this->createReview(
+            $employee,
+            $period,
+            $admin,
+            [
+                'status' => 'submitted',
+                'overall_score' => 70,
+            ]
+        );
+
+        $this->service->reject(
+            $admin,
+            $review
+        );
+
+        Notification::assertSentTo(
+            $employeeUser,
+            PerformanceReviewRejected::class,
         );
     }
 }
