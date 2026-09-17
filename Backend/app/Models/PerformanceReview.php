@@ -12,11 +12,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'employee_id',
     'performance_period_id',
     'reviewer_id',
-    'review_type',
-    'status',
     'overall_score',
-    'review_date',
+    'rating',
     'comments',
+    'status',
+    'reviewed_at',
 ])]
 class PerformanceReview extends Model
 {

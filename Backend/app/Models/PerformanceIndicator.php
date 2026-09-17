@@ -8,13 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
+    'code',
     'name',
     'description',
-    'category',
-    'target',
     'weight',
-    'measurement_type',
-    'is_active',
+    'target',
+    'unit',
+    'status',
 ])]
 class PerformanceIndicator extends Model
 {
@@ -23,9 +23,8 @@ class PerformanceIndicator extends Model
     protected function casts(): array
     {
         return [
-            'target' => 'decimal:2',
             'weight' => 'decimal:2',
-            'is_active' => 'boolean',
+            'target' => 'decimal:2',
         ];
     }
 

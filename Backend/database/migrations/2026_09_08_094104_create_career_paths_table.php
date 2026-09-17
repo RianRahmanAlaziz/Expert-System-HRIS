@@ -13,8 +13,7 @@ return new class extends Migration
     {
         Schema::create('career_paths', function (Blueprint $table) {
             $table->id();
-            $table->string('code', 50)->unique();
-            $table->string('name', 100);
+            $table->string('name', 150);
             $table->text('description')->nullable();
             $table->string('status', 30);
             $table->boolean('is_active')->default(true);

@@ -13,18 +13,14 @@ return new class extends Migration
     {
         Schema::create('performance_indicators', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 100);
+            $table->string('code', 50)->unique();
+            $table->string('name', 150);
             $table->text('description')->nullable();
-            $table->string('category', 50)->nullable();
-            $table->decimal('target', 8, 2)->nullable();
             $table->decimal('weight', 5, 2)->default(0);
-            $table->string('measurement_type', 30)->default('score');
-            $table->boolean('is_active')->default(true);
-
+            $table->decimal('target', 10, 2)->nullable();
+            $table->string('unit', 50)->nullable();
+            $table->string('status', 30);
             $table->timestamps();
-
-            $table->index('category');
-            $table->index('is_active');
         });
     }
 

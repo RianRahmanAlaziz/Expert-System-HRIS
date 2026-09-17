@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('performance_review_id')->constrained('performance_reviews')->cascadeOnDelete();
             $table->foreignId('performance_indicator_id')->constrained('performance_indicators')->restrictOnDelete();
-            $table->decimal('score', 5, 2)->nullable();
-            $table->text('comment')->nullable();
+            $table->decimal('score', 5, 2);
+            $table->decimal('target_value', 10, 2)->nullable();
+            $table->decimal('actual_value', 10, 2)->nullable();
+            $table->text('comments')->nullable();
 
             $table->timestamps();
 

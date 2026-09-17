@@ -10,8 +10,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'career_path_id',
     'position_id',
     'sequence',
-    'is_entry',
-    'is_target',
 ])]
 class CareerPathPosition extends Model
 {
@@ -31,8 +29,6 @@ class CareerPathPosition extends Model
             'career_path_id' => 'integer',
             'position_id' => 'integer',
             'sequence' => 'integer',
-            'is_entry' => 'boolean',
-            'is_target' => 'boolean',
         ];
     }
 }

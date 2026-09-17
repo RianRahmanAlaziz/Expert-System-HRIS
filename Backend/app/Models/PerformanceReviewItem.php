@@ -11,7 +11,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'performance_review_id',
     'performance_indicator_id',
     'score',
-    'comment',
+    'target_value',
+    'actual_value',
+    'comments',
 ])]
 
 class PerformanceReviewItem extends Model

@@ -16,8 +16,6 @@ return new class extends Migration
             $table->foreignId('career_path_id')->constrained('career_paths')->cascadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('position_id')->constrained('positions')->cascadeOnUpdate()->cascadeOnDelete();
             $table->unsignedInteger('sequence');
-            $table->boolean('is_entry')->default(false);
-            $table->boolean('is_target')->default(false);
 
             $table->timestamps();
 

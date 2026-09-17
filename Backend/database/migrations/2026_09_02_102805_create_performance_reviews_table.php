@@ -16,17 +16,16 @@ return new class extends Migration
             $table->foreignId('employee_id')->constrained('employees')->cascadeOnDelete();
             $table->foreignId('performance_period_id')->constrained('performance_periods')->cascadeOnDelete();
             $table->foreignId('reviewer_id')->constrained('users')->restrictOnDelete();
-            $table->string('review_type', 30)->default('manager');
-            $table->string('status', 30)->default('draft');
             $table->decimal('overall_score', 5, 2)->nullable();
-            $table->date('review_date')->nullable();
+            $table->string('rating', 50)->nullable();
             $table->text('comments')->nullable();
+            $table->string('status', 30);
+            $table->timestamp('reviewed_at')->nullable();
 
             $table->timestamps();
 
             $table->index(['employee_id', 'performance_period_id']);
             $table->index('reviewer_id');
-            $table->index('review_type');
             $table->index('status');
         });
     }
