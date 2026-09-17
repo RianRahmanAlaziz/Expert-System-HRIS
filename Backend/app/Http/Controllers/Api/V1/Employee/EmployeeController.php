@@ -11,8 +11,10 @@ use App\Models\Employee;
 use App\Services\Employee\EmployeeService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Gate;
 
 class EmployeeController extends Controller implements HasMiddleware
 {
@@ -35,7 +37,10 @@ class EmployeeController extends Controller implements HasMiddleware
      */
     public function index(EmployeeIndexRequest $request): JsonResponse
     {
+        Gate::authorize('viewAny', Employee::class);
+
         $employees = $this->employeeService->paginate(
+            user: $request->user(),
             perPage: $request->integer('per_page', 15),
             search: $request->query('search'),
             departmentId: $request->integer('department_id') ?: null,
@@ -61,27 +66,15 @@ class EmployeeController extends Controller implements HasMiddleware
         );
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreEmployeeRequest $request): JsonResponse
-    {
-        $employee = $this->employeeService->create(
-            $request->validated(),
-        );
+    public function show(
+        Request $request,
+        Employee $employee
+    ): JsonResponse {
+        Gate::authorize('view', $employee);
 
-        return ApiResponse::success(
-            data: EmployeeResource::make($employee),
-            message: 'Employee berhasil dibuat.',
-        );
-    }
-    /**
-     * Display the specified resource.
-     */
-    public function show(Employee $employee): JsonResponse
-    {
         $employee = $this->employeeService->findById(
-            $employee->id,
+            user: $request->user(),
+            id: $employee->id,
         );
 
         return ApiResponse::success(
@@ -91,10 +84,31 @@ class EmployeeController extends Controller implements HasMiddleware
     }
 
     /**
+     * Store a newly created resource in storage.
+     */
+    public function store(StoreEmployeeRequest $request): JsonResponse
+    {
+        Gate::authorize('create', Employee::class);
+
+        $employee = $this->employeeService->create(
+            $request->validated(),
+        );
+
+        return ApiResponse::success(
+            data: EmployeeResource::make($employee),
+            message: 'Employee berhasil dibuat.',
+            status: 201,
+        );
+    }
+
+    /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateEmployeeRequest $request, Employee $employee): JsonResponse
-    {
+    public function update(
+        UpdateEmployeeRequest $request,
+        Employee $employee
+    ): JsonResponse {
+        Gate::authorize('update', $employee);
         $employee = $this->employeeService->update(
             $employee,
             $request->validated(),
@@ -111,6 +125,7 @@ class EmployeeController extends Controller implements HasMiddleware
      */
     public function destroy(Employee $employee): JsonResponse
     {
+        Gate::authorize('delete', $employee);
         $this->employeeService->delete($employee);
 
         return ApiResponse::success(

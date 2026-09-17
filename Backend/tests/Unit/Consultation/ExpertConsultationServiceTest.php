@@ -9,7 +9,7 @@ use App\Models\ExpertConsultation;
 use App\Models\Position;
 use App\Models\User;
 use App\Services\Consultation\ExpertConsultationService;
-use App\Services\EmployeeService;
+use App\Services\Employee\EmployeeService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

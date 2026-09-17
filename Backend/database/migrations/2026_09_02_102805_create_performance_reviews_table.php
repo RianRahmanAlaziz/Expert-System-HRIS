@@ -24,7 +24,13 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['employee_id', 'performance_period_id']);
+            $table->unique(
+                [
+                    'employee_id',
+                    'performance_period_id',
+                ],
+                'performance_review_employee_period_unique',
+            );
             $table->index('reviewer_id');
             $table->index('status');
         });

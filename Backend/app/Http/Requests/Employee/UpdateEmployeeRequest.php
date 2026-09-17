@@ -118,14 +118,22 @@ class UpdateEmployeeRequest extends FormRequest
             ],
 
             'history_reason' => [
+                'sometimes',
                 'nullable',
                 'string',
                 'max:255',
             ],
 
             'history_notes' => [
+                'sometimes',
                 'nullable',
                 'string',
+            ],
+
+            'effective_date' => [
+                'sometimes',
+                'date',
+                'before_or_equal:today',
             ],
         ];
     }

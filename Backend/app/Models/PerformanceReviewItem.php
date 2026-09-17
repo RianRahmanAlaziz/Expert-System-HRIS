@@ -24,6 +24,8 @@ class PerformanceReviewItem extends Model
     {
         return [
             'score' => 'decimal:2',
+            'target_value' => 'decimal:2',
+            'actual_value' => 'decimal:2',
         ];
     }
 

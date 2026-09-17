@@ -4,6 +4,7 @@ namespace App\Http\Resources\V1\Employee;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Gate;
 
 class EmployeeResource extends JsonResource
 {
@@ -14,72 +15,115 @@ class EmployeeResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $canViewSensitive = Gate::allows(
+            'viewSensitive',
+            $this->resource,
+        );
+
+        $canViewAccount = Gate::allows(
+            'viewAccount',
+            $this->resource,
+        );
+
+        $canViewEmploymentHistory = Gate::allows(
+            'viewEmploymentHistory',
+            $this->resource,
+        );
+
         return [
             'id' => $this->id,
             'employee_number' => $this->employee_number,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
-            'full_name' => trim("{$this->first_name} {$this->last_name}"),
-            'gender' => $this->gender,
-            'birth_date' => $this->birth_date,
-            'phone' => $this->phone,
-            'address' => $this->address,
+            'full_name' => trim(
+                "{$this->first_name} {$this->last_name}"
+            ),
+            'gender' => $this->when(
+                $canViewSensitive,
+                $this->gender,
+            ),
+            'birth_date' => $this->when(
+                $canViewSensitive,
+                fn() => $this->birth_date?->format('Y-m-d'),
+            ),
+            'phone' => $this->when(
+                $canViewSensitive,
+                $this->phone,
+            ),
+            'address' => $this->when(
+                $canViewSensitive,
+                $this->address,
+            ),
             'join_date' => $this->join_date,
             'employment_type' => $this->employment_type,
             'employment_status' => $this->employment_status,
-
-            'user' => $this->whenLoaded('user', function () {
-                return [
-                    'id' => $this->user?->id,
-                    'name' => $this->user?->name,
-                    'email' => $this->user?->email,
-                    'is_active' => $this->user?->is_active,
-                ];
-            }),
-
-            'department' => $this->whenLoaded('department', function () {
-                return [
-                    'id' => $this->department?->id,
-                    'code' => $this->department?->code,
-                    'name' => $this->department?->name,
-                ];
-            }),
-
-            'position' => $this->whenLoaded('position', function () {
-                return [
-                    'id' => $this->position?->id,
-                    'code' => $this->position?->code,
-                    'name' => $this->position?->name,
-                    'level' => $this->position?->level,
-                ];
-            }),
-
-            'manager' => $this->whenLoaded('manager', function () {
-                return $this->manager ? [
-                    'id' => $this->manager->id,
-                    'employee_number' => $this->manager->employee_number,
-                    'full_name' => trim(
-                        "{$this->manager->first_name} {$this->manager->last_name}"
-                    ),
-                ] : null;
-            }),
-
-            'subordinates' => $this->whenLoaded('subordinates', function () {
-                return $this->subordinates->map(function ($employee) {
+            'user' => $this->when(
+                $canViewAccount && $this->relationLoaded('user'),
+                function () {
                     return [
-                        'id' => $employee->id,
-                        'employee_number' => $employee->employee_number,
-                        'full_name' => trim(
-                            "{$employee->first_name} {$employee->last_name}"
-                        ),
+                        'id' => $this->user?->id,
+                        'name' => $this->user?->name,
+                        'email' => $this->user?->email,
+                        'is_active' => $this->user?->is_active,
                     ];
-                });
-            }),
-
-            'employment_histories' => EmploymentHistoryResource::collection(
-                $this->whenLoaded('employmentHistories')
+                },
             ),
-
+            'department' => $this->whenLoaded(
+                'department',
+                function () {
+                    return [
+                        'id' => $this->department?->id,
+                        'code' => $this->department?->code,
+                        'name' => $this->department?->name,
+                    ];
+                },
+            ),
+            'position' => $this->whenLoaded(
+                'position',
+                function () {
+                    return [
+                        'id' => $this->position?->id,
+                        'code' => $this->position?->code,
+                        'name' => $this->position?->name,
+                        'level' => $this->position?->level,
+                    ];
+                },
+            ),
+            'manager' => $this->whenLoaded(
+                'manager',
+                function () {
+                    return $this->manager ? [
+                        'id' => $this->manager->id,
+                        'employee_number' => $this->manager->employee_number,
+                        'full_name' => trim(
+                            "{$this->manager->first_name} {$this->manager->last_name}"
+                        ),
+                    ] : null;
+                },
+            ),
+            'subordinates' => $this->whenLoaded(
+                'subordinates',
+                function () {
+                    return $this->subordinates->map(
+                        function ($employee) {
+                            return [
+                                'id' => $employee->id,
+                                'employee_number' => $employee->employee_number,
+                                'full_name' => trim(
+                                    "{$employee->first_name} {$employee->last_name}"
+                                ),
+                            ];
+                        }
+                    );
+                },
+            ),
+            'employment_histories' => $this->when(
+                $canViewEmploymentHistory
+                    && $this->relationLoaded('employmentHistories'),
+                fn() => EmploymentHistoryResource::collection(
+                    $this->employmentHistories,
+                ),
+            ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

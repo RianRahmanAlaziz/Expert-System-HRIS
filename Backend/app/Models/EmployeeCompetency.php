@@ -17,6 +17,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class EmployeeCompetency extends Model
 {
+    protected function casts(): array
+    {
+        return [
+            'score' => 'decimal:2',
+            'assessed_at' => 'date',
+        ];
+    }
+
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);

@@ -25,7 +25,7 @@ class PerformanceReview extends Model
     {
         return [
             'overall_score' => 'decimal:2',
-            'review_date' => 'date',
+            'reviewed_at' => 'date',
         ];
     }
 
@@ -48,14 +48,6 @@ class PerformanceReview extends Model
     }
 
     public function items(): HasMany
-    {
-        return $this->hasMany(
-            PerformanceReviewItem::class,
-            'performance_review_id',
-        );
-    }
-
-    public function performanceReviewItems(): HasMany
     {
         return $this->hasMany(
             PerformanceReviewItem::class,
