@@ -3,11 +3,16 @@
 namespace App\Services\ExpertSystem;
 
 use App\Models\Knowledge;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class KnowledgeService
 {
+    public function __construct(
+        private readonly ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?string $search = null,
@@ -35,6 +40,7 @@ class KnowledgeService
     {
         return Knowledge::query()->with(['knowledgeCategory', 'expertRules',])->findOrFail($id);
     }
+
     public function create(array $data): Knowledge
     {
         return DB::transaction(
@@ -46,6 +52,14 @@ class KnowledgeService
                     'version' => $data['version'] ?? 1,
                     'status' => $data['status'],
                 ]);
+
+                $this->activityLogService->log(
+                    action: 'create',
+                    module: 'knowledge',
+                    target: $knowledge,
+                    newValues: $knowledge->toArray(),
+                );
+
                 return $knowledge->load('knowledgeCategory');
             },
         );
@@ -53,13 +67,33 @@ class KnowledgeService
     public function update(Knowledge $knowledge, array $data,): Knowledge
     {
         DB::transaction(function () use ($knowledge, $data): void {
+            $oldValues = $knowledge->toArray();
             $knowledge->update($data);
+            $knowledge->refresh();
+
+            $this->activityLogService->log(
+                action: 'update',
+                module: 'knowledge',
+                target: $knowledge,
+                oldValues: $oldValues,
+                newValues: $knowledge->toArray(),
+            );
         });
+
         return $knowledge->refresh()->load('knowledgeCategory');
     }
     public function delete(Knowledge $knowledge): void
     {
-        DB::transaction(static function () use ($knowledge): void {
+        DB::transaction(function () use ($knowledge): void {
+            $oldValues = $knowledge->toArray();
+
+            $this->activityLogService->log(
+                action: 'delete',
+                module: 'knowledge',
+                target: $knowledge,
+                oldValues: $oldValues,
+            );
+
             $knowledge->delete();
         });
     }

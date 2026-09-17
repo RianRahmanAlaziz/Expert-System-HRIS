@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Promotion;
 
+use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
@@ -508,6 +509,211 @@ class PromotionAssessmentServiceTest extends TestCase
             [
                 'id' => $assessment->id,
             ],
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_promotion_assessment(): void
+    {
+        $employeeUser = $this->createUser();
+        $assessedBy = $this->createUser();
+
+        $currentPosition = $this->createPosition(
+            'POS-CURRENT',
+            'Current Position',
+        );
+
+        $targetPosition = $this->createPosition(
+            'POS-TARGET',
+            'Target Position',
+        );
+
+        $employee = $this->createEmployee(
+            $employeeUser,
+            $currentPosition,
+        );
+
+        $assessment = $this->service->create(
+            $assessedBy,
+            [
+                'employee_id' => $employee->id,
+                'current_position_id' => $currentPosition->id,
+                'target_position_id' => $targetPosition->id,
+                'assessment_date' => '2026-09-08',
+                'status' => 'draft',
+                'overall_score' => 85.50,
+                'recommendation' => 'promote',
+                'notes' => 'Ready for promotion.',
+            ],
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'promotion_assessment')
+            ->where('target_id', $assessment->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $employee->id,
+            $activityLog->new_values['employee_id'],
+        );
+
+        $this->assertSame(
+            $currentPosition->id,
+            $activityLog->new_values['current_position_id'],
+        );
+
+        $this->assertSame(
+            $targetPosition->id,
+            $activityLog->new_values['target_position_id'],
+        );
+
+        $this->assertSame(
+            $assessedBy->id,
+            $activityLog->new_values['assessed_by'],
+        );
+
+        $this->assertSame(
+            '2026-09-08',
+            $activityLog->new_values['assessment_date'],
+        );
+
+        $this->assertSame(
+            'draft',
+            $activityLog->new_values['status'],
+        );
+
+        $this->assertSame(
+            '85.50',
+            (string) $activityLog->new_values['overall_score'],
+        );
+
+        $this->assertSame(
+            'promote',
+            $activityLog->new_values['recommendation'],
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_promotion_assessment(): void
+    {
+        $assessment = $this->createPromotionAssessment();
+
+        $result = $this->service->update(
+            $assessment,
+            [
+                'status' => 'completed',
+                'overall_score' => 90,
+                'recommendation' => 'promote',
+                'notes' => 'Assessment completed.',
+            ],
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'promotion_assessment')
+            ->where('target_id', $result->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'draft',
+            $activityLog->old_values['status'],
+        );
+
+        $this->assertSame(
+            'completed',
+            $activityLog->new_values['status'],
+        );
+
+        $this->assertNull(
+            $activityLog->old_values['overall_score'],
+        );
+
+        $this->assertSame(
+            '90.00',
+            (string) $activityLog->new_values['overall_score'],
+        );
+
+        $this->assertSame(
+            null,
+            $activityLog->old_values['recommendation'],
+        );
+
+        $this->assertSame(
+            'promote',
+            $activityLog->new_values['recommendation'],
+        );
+
+        $this->assertSame(
+            'Test assessment.',
+            $activityLog->old_values['notes'],
+        );
+
+        $this->assertSame(
+            'Assessment completed.',
+            $activityLog->new_values['notes'],
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_promotion_assessment(): void
+    {
+        $assessment = $this->createPromotionAssessment(
+            attributes: [
+                'overall_score' => 88,
+                'recommendation' => 'promote',
+                'status' => 'completed',
+            ],
+        );
+
+        $this->service->delete($assessment);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'promotion_assessment')
+            ->where('target_id', $assessment->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $assessment->employee_id,
+            $activityLog->old_values['employee_id'],
+        );
+
+        $this->assertSame(
+            $assessment->current_position_id,
+            $activityLog->old_values['current_position_id'],
+        );
+
+        $this->assertSame(
+            $assessment->target_position_id,
+            $activityLog->old_values['target_position_id'],
+        );
+
+        $this->assertSame(
+            $assessment->assessed_by,
+            $activityLog->old_values['assessed_by'],
+        );
+
+        $this->assertSame(
+            '2026-09-08',
+            $activityLog->old_values['assessment_date'],
+        );
+
+        $this->assertSame(
+            'completed',
+            $activityLog->old_values['status'],
+        );
+
+        $this->assertSame(
+            '88.00',
+            (string) $activityLog->old_values['overall_score'],
+        );
+
+        $this->assertSame(
+            'promote',
+            $activityLog->old_values['recommendation'],
+        );
+
+        $this->assertSame(
+            'Test assessment.',
+            $activityLog->old_values['notes'],
         );
     }
 }

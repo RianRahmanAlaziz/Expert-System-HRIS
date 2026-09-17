@@ -3,6 +3,7 @@
 namespace App\Services\Career;
 
 use App\Models\CareerPathPosition;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class CareerPathPositionService
 {
+    public function __construct(
+        protected ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?int $careerPathId = null,
@@ -92,6 +97,19 @@ class CareerPathPositionService
                     'is_target' => $data['is_target'] ?? false,
                 ]);
 
+                $this->activityLogService->log(
+                    action: 'create',
+                    module: 'career_path_position',
+                    target: $careerPathPosition,
+                    newValues: [
+                        'career_path_id' => $careerPathPosition->career_path_id,
+                        'position_id' => $careerPathPosition->position_id,
+                        'sequence' => $careerPathPosition->sequence,
+                        'is_entry' => $careerPathPosition->is_entry,
+                        'is_target' => $careerPathPosition->is_target,
+                    ],
+                );
+
                 return $careerPathPosition->load([
                     'careerPath',
                     'position',
@@ -121,14 +139,36 @@ class CareerPathPositionService
                     ignoreId: $careerPathPosition->id,
                 );
 
+                $oldValues = [
+                    'career_path_id' => $careerPathPosition->career_path_id,
+                    'position_id' => $careerPathPosition->position_id,
+                    'sequence' => $careerPathPosition->sequence,
+                    'is_entry' => $careerPathPosition->is_entry,
+                    'is_target' => $careerPathPosition->is_target,
+                ];
+
                 $careerPathPosition->update($data);
 
-                return $careerPathPosition
-                    ->refresh()
-                    ->load([
-                        'careerPath',
-                        'position',
-                    ]);
+                $careerPathPosition->refresh();
+
+                $this->activityLogService->log(
+                    action: 'update',
+                    module: 'career_path_position',
+                    target: $careerPathPosition,
+                    oldValues: $oldValues,
+                    newValues: [
+                        'career_path_id' => $careerPathPosition->career_path_id,
+                        'position_id' => $careerPathPosition->position_id,
+                        'sequence' => $careerPathPosition->sequence,
+                        'is_entry' => $careerPathPosition->is_entry,
+                        'is_target' => $careerPathPosition->is_target,
+                    ],
+                );
+
+                return $careerPathPosition->load([
+                    'careerPath',
+                    'position',
+                ]);
             },
         );
     }
@@ -137,8 +177,23 @@ class CareerPathPositionService
         CareerPathPosition $careerPathPosition,
     ): void {
         DB::transaction(
-            static function () use ($careerPathPosition): void {
+            function () use ($careerPathPosition): void {
+                $oldValues = [
+                    'career_path_id' => $careerPathPosition->career_path_id,
+                    'position_id' => $careerPathPosition->position_id,
+                    'sequence' => $careerPathPosition->sequence,
+                    'is_entry' => $careerPathPosition->is_entry,
+                    'is_target' => $careerPathPosition->is_target,
+                ];
+
                 $careerPathPosition->delete();
+
+                $this->activityLogService->log(
+                    action: 'delete',
+                    module: 'career_path_position',
+                    target: $careerPathPosition,
+                    oldValues: $oldValues,
+                );
             },
         );
     }

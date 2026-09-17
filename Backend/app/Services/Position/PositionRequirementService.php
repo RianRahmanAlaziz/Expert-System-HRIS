@@ -3,11 +3,16 @@
 namespace App\Services\Position;
 
 use App\Models\PositionRequirement;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class PositionRequirementService
 {
+    public function __construct(
+        protected ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?string $search = null,
@@ -70,6 +75,21 @@ class PositionRequirementService
                     'is_active' => $data['is_active'] ?? true,
                 ]);
 
+                $this->activityLogService->log(
+                    action: 'create',
+                    module: 'position_requirement',
+                    target: $requirement,
+                    newValues: [
+                        'position_id' => $requirement->position_id,
+                        'minimum_experience_years' => $requirement->minimum_experience_years,
+                        'minimum_performance_score' => $requirement->minimum_performance_score,
+                        'minimum_attendance_percentage' => $requirement->minimum_attendance_percentage,
+                        'description' => $requirement->description,
+                        'status' => $requirement->status,
+                        'is_active' => $requirement->is_active,
+                    ],
+                );
+
                 return $requirement->load('position');
             },
         );
@@ -79,23 +99,68 @@ class PositionRequirementService
         PositionRequirement $positionRequirement,
         array $data,
     ): PositionRequirement {
+        $oldValues = [
+            'position_id' => $positionRequirement->position_id,
+            'minimum_experience_years' => $positionRequirement->minimum_experience_years,
+            'minimum_performance_score' => $positionRequirement->minimum_performance_score,
+            'minimum_attendance_percentage' => $positionRequirement->minimum_attendance_percentage,
+            'description' => $positionRequirement->description,
+            'status' => $positionRequirement->status,
+            'is_active' => $positionRequirement->is_active,
+        ];
+
         DB::transaction(
             function () use ($positionRequirement, $data): void {
                 $positionRequirement->update($data);
             }
         );
 
-        return $positionRequirement
+        $positionRequirement
             ->refresh()
             ->load('position');
+
+        $this->activityLogService->log(
+            action: 'update',
+            module: 'position_requirement',
+            target: $positionRequirement,
+            oldValues: $oldValues,
+            newValues: [
+                'position_id' => $positionRequirement->position_id,
+                'minimum_experience_years' => $positionRequirement->minimum_experience_years,
+                'minimum_performance_score' => $positionRequirement->minimum_performance_score,
+                'minimum_attendance_percentage' => $positionRequirement->minimum_attendance_percentage,
+                'description' => $positionRequirement->description,
+                'status' => $positionRequirement->status,
+                'is_active' => $positionRequirement->is_active,
+            ],
+        );
+
+        return $positionRequirement;
     }
 
     public function delete(PositionRequirement $positionRequirement): void
     {
+        $oldValues = [
+            'position_id' => $positionRequirement->position_id,
+            'minimum_experience_years' => $positionRequirement->minimum_experience_years,
+            'minimum_performance_score' => $positionRequirement->minimum_performance_score,
+            'minimum_attendance_percentage' => $positionRequirement->minimum_attendance_percentage,
+            'description' => $positionRequirement->description,
+            'status' => $positionRequirement->status,
+            'is_active' => $positionRequirement->is_active,
+        ];
+
         DB::transaction(
-            static function () use ($positionRequirement): void {
+            function () use ($positionRequirement): void {
                 $positionRequirement->delete();
             }
+        );
+
+        $this->activityLogService->log(
+            action: 'delete',
+            module: 'position_requirement',
+            target: $positionRequirement,
+            oldValues: $oldValues,
         );
     }
 }

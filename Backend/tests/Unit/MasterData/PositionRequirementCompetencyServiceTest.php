@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\MasterData;
 
+use App\Models\ActivityLog;
 use App\Models\Competency;
 use App\Models\CompetencyLevel;
 use App\Models\Position;
@@ -588,6 +589,186 @@ class PositionRequirementCompetencyServiceTest extends TestCase
             [
                 'id' => $item->id,
             ]
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_position_requirement_competency(): void
+    {
+        $positionRequirement = $this->createPositionRequirement();
+        $competency = $this->createCompetency();
+        $competencyLevel = $this->createCompetencyLevel();
+
+        $item = $this->service->create([
+            'position_requirement_id' => $positionRequirement->id,
+            'competency_id' => $competency->id,
+            'required_level_id' => $competencyLevel->id,
+            'minimum_score' => 80,
+            'weight' => 100,
+            'is_required' => true,
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'position_requirement_competency')
+            ->where('target_id', $item->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $positionRequirement->id,
+            $activityLog->new_values['position_requirement_id']
+        );
+
+        $this->assertSame(
+            $competency->id,
+            $activityLog->new_values['competency_id']
+        );
+
+        $this->assertSame(
+            $competencyLevel->id,
+            $activityLog->new_values['required_level_id']
+        );
+
+        $this->assertSame(
+            '80.00',
+            (string) $activityLog->new_values['minimum_score']
+        );
+
+        $this->assertSame(
+            '100.00',
+            (string) $activityLog->new_values['weight']
+        );
+
+        $this->assertTrue(
+            $activityLog->new_values['is_required']
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_position_requirement_competency(): void
+    {
+        $oldCompetency = $this->createCompetency(
+            'COMP-001',
+            'Communication',
+        );
+
+        $item = $this->createRequirementCompetency(
+            competency: $oldCompetency,
+        );
+
+        $newCompetency = $this->createCompetency(
+            'COMP-002',
+            'Leadership',
+        );
+
+        $newLevel = $this->createCompetencyLevel(
+            4,
+            'Advanced',
+        );
+
+        $result = $this->service->update(
+            $item,
+            [
+                'competency_id' => $newCompetency->id,
+                'required_level_id' => $newLevel->id,
+                'minimum_score' => 85,
+                'weight' => 80,
+                'is_required' => false,
+            ],
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'position_requirement_competency')
+            ->where('target_id', $result->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $item->position_requirement_id,
+            $activityLog->old_values['position_requirement_id']
+        );
+
+        $this->assertSame(
+            $oldCompetency->id,
+            $activityLog->old_values['competency_id']
+        );
+
+        $this->assertSame(
+            $newCompetency->id,
+            $activityLog->new_values['competency_id']
+        );
+
+        $this->assertSame(
+            $newLevel->id,
+            $activityLog->new_values['required_level_id']
+        );
+
+        $this->assertSame(
+            '70.00',
+            (string) $activityLog->old_values['minimum_score']
+        );
+
+        $this->assertSame(
+            '85.00',
+            (string) $activityLog->new_values['minimum_score']
+        );
+
+        $this->assertSame(
+            '100.00',
+            (string) $activityLog->old_values['weight']
+        );
+
+        $this->assertSame(
+            '80.00',
+            (string) $activityLog->new_values['weight']
+        );
+
+        $this->assertTrue(
+            $activityLog->old_values['is_required']
+        );
+
+        $this->assertFalse(
+            $activityLog->new_values['is_required']
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_position_requirement_competency(): void
+    {
+        $item = $this->createRequirementCompetency();
+
+        $this->service->delete($item);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'position_requirement_competency')
+            ->where('target_id', $item->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $item->position_requirement_id,
+            $activityLog->old_values['position_requirement_id']
+        );
+
+        $this->assertSame(
+            $item->competency_id,
+            $activityLog->old_values['competency_id']
+        );
+
+        $this->assertSame(
+            $item->required_level_id,
+            $activityLog->old_values['required_level_id']
+        );
+
+        $this->assertSame(
+            '70.00',
+            (string) $activityLog->old_values['minimum_score']
+        );
+
+        $this->assertSame(
+            '100.00',
+            (string) $activityLog->old_values['weight']
+        );
+
+        $this->assertTrue(
+            $activityLog->old_values['is_required']
         );
     }
 }

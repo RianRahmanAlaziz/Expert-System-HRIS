@@ -4,11 +4,16 @@ namespace App\Services\Promotion;
 
 use App\Models\PromotionAssessment;
 use App\Models\User;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class PromotionAssessmentService
 {
+    public function __construct(
+        protected ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?int $employeeId = null,
@@ -91,6 +96,23 @@ class PromotionAssessmentService
                     'notes' => $data['notes'] ?? null,
                 ]);
 
+                $this->activityLogService->log(
+                    action: 'create',
+                    module: 'promotion_assessment',
+                    target: $assessment,
+                    newValues: [
+                        'employee_id' => $assessment->employee_id,
+                        'current_position_id' => $assessment->current_position_id,
+                        'target_position_id' => $assessment->target_position_id,
+                        'assessed_by' => $assessment->assessed_by,
+                        'assessment_date' => $assessment->assessment_date?->toDateString(),
+                        'status' => $assessment->status,
+                        'overall_score' => $assessment->overall_score,
+                        'recommendation' => $assessment->recommendation,
+                        'notes' => $assessment->notes,
+                    ],
+                );
+
                 return $assessment->load([
                     'employee',
                     'currentPosition',
@@ -111,7 +133,39 @@ class PromotionAssessmentService
                 $promotionAssessment,
                 $data,
             ): void {
+                $oldValues = [
+                    'employee_id' => $promotionAssessment->employee_id,
+                    'current_position_id' => $promotionAssessment->current_position_id,
+                    'target_position_id' => $promotionAssessment->target_position_id,
+                    'assessed_by' => $promotionAssessment->assessed_by,
+                    'assessment_date' => $promotionAssessment->assessment_date?->toDateString(),
+                    'status' => $promotionAssessment->status,
+                    'overall_score' => $promotionAssessment->overall_score,
+                    'recommendation' => $promotionAssessment->recommendation,
+                    'notes' => $promotionAssessment->notes,
+                ];
+
                 $promotionAssessment->update($data);
+
+                $promotionAssessment->refresh();
+
+                $this->activityLogService->log(
+                    action: 'update',
+                    module: 'promotion_assessment',
+                    target: $promotionAssessment,
+                    oldValues: $oldValues,
+                    newValues: [
+                        'employee_id' => $promotionAssessment->employee_id,
+                        'current_position_id' => $promotionAssessment->current_position_id,
+                        'target_position_id' => $promotionAssessment->target_position_id,
+                        'assessed_by' => $promotionAssessment->assessed_by,
+                        'assessment_date' => $promotionAssessment->assessment_date?->toDateString(),
+                        'status' => $promotionAssessment->status,
+                        'overall_score' => $promotionAssessment->overall_score,
+                        'recommendation' => $promotionAssessment->recommendation,
+                        'notes' => $promotionAssessment->notes,
+                    ],
+                );
             },
         );
 
@@ -130,8 +184,27 @@ class PromotionAssessmentService
         PromotionAssessment $promotionAssessment,
     ): void {
         DB::transaction(
-            static function () use ($promotionAssessment): void {
+            function () use ($promotionAssessment): void {
+                $oldValues = [
+                    'employee_id' => $promotionAssessment->employee_id,
+                    'current_position_id' => $promotionAssessment->current_position_id,
+                    'target_position_id' => $promotionAssessment->target_position_id,
+                    'assessed_by' => $promotionAssessment->assessed_by,
+                    'assessment_date' => $promotionAssessment->assessment_date?->toDateString(),
+                    'status' => $promotionAssessment->status,
+                    'overall_score' => $promotionAssessment->overall_score,
+                    'recommendation' => $promotionAssessment->recommendation,
+                    'notes' => $promotionAssessment->notes,
+                ];
+
                 $promotionAssessment->delete();
+
+                $this->activityLogService->log(
+                    action: 'delete',
+                    module: 'promotion_assessment',
+                    target: $promotionAssessment,
+                    oldValues: $oldValues,
+                );
             },
         );
     }

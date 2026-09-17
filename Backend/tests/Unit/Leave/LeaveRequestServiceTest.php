@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Leave;
 
+use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\LeaveBalance;
@@ -1017,6 +1018,190 @@ class LeaveRequestServiceTest extends TestCase
         Notification::assertSentTo(
             $employeeUser,
             LeaveRequestRejected::class,
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_leave_request(): void
+    {
+        $employee = $this->createEmployee();
+        $leaveType = $this->createLeaveType();
+
+        $leaveRequest = $this->leaveRequestService->create(
+            employee: $employee,
+            data: [
+                'leave_type_id' => $leaveType->id,
+                'start_date' => '2026-03-10',
+                'end_date' => '2026-03-12',
+                'reason' => 'Family event.',
+            ],
+        );
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'create',
+            'module' => 'leave_request',
+            'target_type' => $leaveRequest->getMorphClass(),
+            'target_id' => $leaveRequest->id,
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'leave_request')
+            ->where('target_id', $leaveRequest->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $employee->id,
+            $activityLog->new_values['employee_id']
+        );
+
+        $this->assertSame(
+            $leaveType->id,
+            $activityLog->new_values['leave_type_id']
+        );
+
+        $this->assertSame(
+            'pending',
+            $activityLog->new_values['status']
+        );
+    }
+
+    public function test_it_logs_activity_when_approving_leave_request(): void
+    {
+        $employeeUser = User::factory()->create();
+
+        $employee = $this->createEmployee(
+            user: $employeeUser,
+        );
+
+        $leaveType = $this->createLeaveType();
+        $approver = User::factory()->create();
+
+        $this->createLeaveBalance(
+            employee: $employee,
+            leaveType: $leaveType,
+        );
+
+        $leaveRequest = $this->createLeaveRequest(
+            employee: $employee,
+            leaveType: $leaveType,
+        );
+
+        $this->leaveRequestService->approve(
+            leaveRequest: $leaveRequest,
+            approvedBy: $approver,
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'approve')
+            ->where('module', 'leave_request')
+            ->where('target_id', $leaveRequest->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'pending',
+            $activityLog->old_values['status']
+        );
+
+        $this->assertSame(
+            'approved',
+            $activityLog->new_values['status']
+        );
+
+        $this->assertSame(
+            $approver->id,
+            $activityLog->new_values['approved_by']
+        );
+    }
+
+    public function test_it_logs_activity_when_rejecting_leave_request(): void
+    {
+        $employeeUser = User::factory()->create();
+
+        $employee = $this->createEmployee(
+            user: $employeeUser,
+        );
+
+        $leaveType = $this->createLeaveType();
+        $rejector = User::factory()->create();
+
+        $leaveRequest = $this->createLeaveRequest(
+            employee: $employee,
+            leaveType: $leaveType,
+        );
+
+        $this->leaveRequestService->reject(
+            leaveRequest: $leaveRequest,
+            rejectedBy: $rejector,
+            rejectionReason: 'Project deadline.',
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'reject')
+            ->where('module', 'leave_request')
+            ->where('target_id', $leaveRequest->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'pending',
+            $activityLog->old_values['status']
+        );
+
+        $this->assertSame(
+            'rejected',
+            $activityLog->new_values['status']
+        );
+
+        $this->assertSame(
+            $rejector->id,
+            $activityLog->new_values['approved_by']
+        );
+
+        $this->assertSame(
+            'Project deadline.',
+            $activityLog->new_values['rejection_reason']
+        );
+    }
+    public function test_it_logs_activity_when_cancelling_leave_request(): void
+    {
+        $employee = $this->createEmployee();
+        $leaveType = $this->createLeaveType();
+
+        $leaveRequest = $this->createLeaveRequest(
+            employee: $employee,
+            leaveType: $leaveType,
+        );
+
+        $this->leaveRequestService->cancel(
+            leaveRequest: $leaveRequest,
+            employee: $employee,
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'cancel')
+            ->where('module', 'leave_request')
+            ->where('target_id', $leaveRequest->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'pending',
+            $activityLog->old_values['status']
+        );
+
+        $this->assertSame(
+            'cancelled',
+            $activityLog->new_values['status']
+        );
+
+        $this->assertNull(
+            $activityLog->new_values['approved_by']
+        );
+
+        $this->assertNull(
+            $activityLog->new_values['approved_at']
+        );
+
+        $this->assertNull(
+            $activityLog->new_values['rejection_reason']
         );
     }
 }

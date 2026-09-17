@@ -3,11 +3,16 @@
 namespace App\Services\ExpertSystem;
 
 use App\Models\ExpertRule;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class ExpertRuleService
 {
+    public function __construct(
+        private readonly ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?string $search = null,
@@ -38,6 +43,7 @@ class ExpertRuleService
             'actions',
         ])->findOrFail($id);
     }
+
     public function create(array $data): ExpertRule
     {
         return DB::transaction(function () use ($data): ExpertRule {
@@ -49,19 +55,51 @@ class ExpertRuleService
                 'priority' => $data['priority'] ?? 1,
                 'status' => $data['status'],
             ]);
+
+            $this->activityLogService->log(
+                action: 'create',
+                module: 'expert_rule',
+                target: $rule,
+                newValues: $rule->toArray(),
+            );
+
             return $rule->load('knowledge');
-        },);
+        });
     }
+
     public function update(ExpertRule $expertRule, array $data,): ExpertRule
     {
         DB::transaction(function () use ($expertRule, $data): void {
+            $oldValues = $expertRule->toArray();
+
             $expertRule->update($data);
+
+            $expertRule->refresh();
+
+            $this->activityLogService->log(
+                action: 'update',
+                module: 'expert_rule',
+                target: $expertRule,
+                oldValues: $oldValues,
+                newValues: $expertRule->toArray(),
+            );
         });
+
         return $expertRule->refresh()->load('knowledge');
     }
+
     public function delete(ExpertRule $expertRule): void
     {
-        DB::transaction(static function () use ($expertRule): void {
+        DB::transaction(function () use ($expertRule): void {
+            $oldValues = $expertRule->toArray();
+
+            $this->activityLogService->log(
+                action: 'delete',
+                module: 'expert_rule',
+                target: $expertRule,
+                oldValues: $oldValues,
+            );
+
             $expertRule->delete();
         });
     }

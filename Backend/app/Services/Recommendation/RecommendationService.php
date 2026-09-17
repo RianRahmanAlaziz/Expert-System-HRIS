@@ -4,12 +4,17 @@ namespace App\Services\Recommendation;
 
 use App\Models\ExpertConsultation;
 use App\Models\Recommendation;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 class RecommendationService
 {
+    public function __construct(
+        private readonly ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?string $search = null,
@@ -87,7 +92,7 @@ class RecommendationService
 
             $result = $consultation->result;
 
-            return Recommendation::query()->create([
+            $recommendation = Recommendation::query()->create([
                 'employee_id' => $consultation->employee_id,
                 'expert_consultation_id' => $consultation->id,
                 'type' => $data['type'],
@@ -98,6 +103,23 @@ class RecommendationService
                 'status' => 'pending',
                 'recommended_at' => now(),
             ]);
+
+            $this->activityLogService->log(
+                action: 'create',
+                module: 'recommendation',
+                target: $recommendation,
+                newValues: [
+                    'employee_id' => $recommendation->employee_id,
+                    'expert_consultation_id' => $recommendation->expert_consultation_id,
+                    'type' => $recommendation->type,
+                    'title' => $recommendation->title,
+                    'priority' => $recommendation->priority,
+                    'status' => $recommendation->status,
+                ],
+                userId: $consultation->user_id,
+            );
+
+            return $recommendation;
         });
     }
 
@@ -135,6 +157,20 @@ class RecommendationService
                     'notes' => $notes,
                 ]);
             }
+
+            $this->activityLogService->log(
+                action: 'update_status',
+                module: 'recommendation',
+                target: $recommendation,
+                oldValues: [
+                    'status' => $oldStatus,
+                ],
+                newValues: [
+                    'status' => $status,
+                    'notes' => $notes,
+                ],
+                userId: $userId,
+            );
 
             return $recommendation->fresh([
                 'employee',

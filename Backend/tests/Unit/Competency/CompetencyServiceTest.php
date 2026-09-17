@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Competency;
 
+use App\Models\ActivityLog;
 use App\Models\Competency;
 use App\Services\Competency\CompetencyService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -322,5 +323,126 @@ class CompetencyServiceTest extends TestCase
         $this->assertDatabaseMissing('competencies', [
             'id' => $competency->id,
         ]);
+    }
+
+    public function test_it_logs_activity_when_creating_competency(): void
+    {
+        $competency = $this->competencyService->create([
+            'code' => 'COM-001',
+            'name' => 'Communication',
+            'category' => 'Behavioral',
+            'description' => 'Communication competency.',
+            'status' => 'active',
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'competency')
+            ->where('target_id', $competency->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'COM-001',
+            $activityLog->new_values['code']
+        );
+
+        $this->assertSame(
+            'Communication',
+            $activityLog->new_values['name']
+        );
+
+        $this->assertSame(
+            'Behavioral',
+            $activityLog->new_values['category']
+        );
+
+        $this->assertSame(
+            'active',
+            $activityLog->new_values['status']
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_competency(): void
+    {
+        $competency = $this->createCompetency();
+
+        $this->competencyService->update(
+            $competency,
+            [
+                'name' => 'Effective Communication',
+                'category' => 'Behavioral',
+                'description' => 'Updated description.',
+                'status' => 'inactive',
+            ]
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'competency')
+            ->where('target_id', $competency->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Communication',
+            $activityLog->old_values['name']
+        );
+
+        $this->assertSame(
+            'Effective Communication',
+            $activityLog->new_values['name']
+        );
+
+        $this->assertSame(
+            'active',
+            $activityLog->old_values['status']
+        );
+
+        $this->assertSame(
+            'inactive',
+            $activityLog->new_values['status']
+        );
+
+        $this->assertSame(
+            'Communication competency.',
+            $activityLog->old_values['description']
+        );
+
+        $this->assertSame(
+            'Updated description.',
+            $activityLog->new_values['description']
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_competency(): void
+    {
+        $competency = $this->createCompetency();
+
+        $this->competencyService->delete($competency);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'competency')
+            ->where('target_id', $competency->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'COM-001',
+            $activityLog->old_values['code']
+        );
+
+        $this->assertSame(
+            'Communication',
+            $activityLog->old_values['name']
+        );
+
+        $this->assertSame(
+            'Behavioral',
+            $activityLog->old_values['category']
+        );
+
+        $this->assertSame(
+            'active',
+            $activityLog->old_values['status']
+        );
     }
 }

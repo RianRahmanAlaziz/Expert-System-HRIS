@@ -7,12 +7,17 @@ use App\Models\Employee;
 use App\Models\ExpertConsultation;
 use App\Models\ExpertRule;
 use App\Models\User;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class ExpertConsultationService
 {
+    public function __construct(
+        private readonly ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         ?string $search = null,
         ?int $employeeId = null,
@@ -141,6 +146,21 @@ class ExpertConsultationService
                 'status' => 'completed',
                 'completed_at' => now(),
             ]);
+
+            $this->activityLogService->log(
+                action: 'create',
+                module: 'expert_consultation',
+                target: $consultation,
+                newValues: [
+                    'employee_id' => $consultation->employee_id,
+                    'user_id' => $consultation->user_id,
+                    'consultation_type' => $consultation->consultation_type,
+                    'status' => $consultation->status,
+                    'recommendation' => $recommendation,
+                    'score' => $score,
+                    'confidence' => $confidence,
+                ],
+            );
 
             return $consultation->load([
                 'employee',

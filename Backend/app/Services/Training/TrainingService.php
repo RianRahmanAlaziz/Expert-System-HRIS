@@ -3,11 +3,16 @@
 namespace App\Services\Training;
 
 use App\Models\Training;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class TrainingService
 {
+    public function __construct(
+        protected ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?string $search = null,
@@ -39,7 +44,7 @@ class TrainingService
     {
         return DB::transaction(
             function () use ($data): Training {
-                return Training::query()->create([
+                $training = Training::query()->create([
                     'code' => $data['code'],
                     'name' => $data['name'],
                     'category' => $data['category'] ?? null,
@@ -50,7 +55,27 @@ class TrainingService
                     'capacity' => $data['capacity'] ?? null,
                     'status' => $data['status'],
                 ]);
+
+                $this->activityLogService->log(
+                    action: 'create',
+                    module: 'training',
+                    target: $training,
+                    newValues: [
+                        'code' => $training->code,
+                        'name' => $training->name,
+                        'category' => $training->category,
+                        'description' => $training->description,
+                        'trainer' => $training->trainer,
+                        'start_date' => $training->start_date?->toDateString(),
+                        'end_date' => $training->end_date?->toDateString(),
+                        'capacity' => $training->capacity,
+                        'status' => $training->status,
+                    ],
+                );
+
+                return $training;
             }
+
         );
     }
 
@@ -58,19 +83,53 @@ class TrainingService
         Training $training,
         array $data,
     ): Training {
+        $oldValues = [
+            'code' => $training->code,
+            'name' => $training->name,
+            'category' => $training->category,
+            'description' => $training->description,
+            'trainer' => $training->trainer,
+            'start_date' => $training->start_date?->toDateString(),
+            'end_date' => $training->end_date?->toDateString(),
+            'capacity' => $training->capacity,
+            'status' => $training->status,
+        ];
+
         DB::transaction(
             function () use ($training, $data): void {
                 $training->update($data);
             }
         );
 
-        return $training->refresh();
+        $training->refresh();
+
+        $this->activityLogService->log(
+            action: 'update',
+            module: 'training',
+            target: $training,
+            oldValues: $oldValues,
+            newValues: [
+                'code' => $training->code,
+                'name' => $training->name,
+                'category' => $training->category,
+                'description' => $training->description,
+                'trainer' => $training->trainer,
+                'start_date' => $training->start_date?->toDateString(),
+                'end_date' => $training->end_date?->toDateString(),
+                'capacity' => $training->capacity,
+                'status' => $training->status,
+            ],
+        );
+
+        return $training;
     }
 
     public function updateStatus(
         Training $training,
         string $status,
     ): Training {
+        $oldStatus = $training->status;
+
         DB::transaction(
             function () use ($training, $status): void {
                 $training->update([
@@ -79,15 +138,48 @@ class TrainingService
             }
         );
 
-        return $training->refresh();
+        $training->refresh();
+
+        $this->activityLogService->log(
+            action: 'update_status',
+            module: 'training',
+            target: $training,
+            oldValues: [
+                'status' => $oldStatus,
+            ],
+            newValues: [
+                'status' => $training->status,
+            ],
+        );
+
+        return $training;
     }
 
     public function delete(Training $training): void
     {
+        $oldValues = [
+            'code' => $training->code,
+            'name' => $training->name,
+            'category' => $training->category,
+            'description' => $training->description,
+            'trainer' => $training->trainer,
+            'start_date' => $training->start_date?->toDateString(),
+            'end_date' => $training->end_date?->toDateString(),
+            'capacity' => $training->capacity,
+            'status' => $training->status,
+        ];
+
         DB::transaction(
-            static function () use ($training): void {
+            function () use ($training): void {
                 $training->delete();
             }
+        );
+
+        $this->activityLogService->log(
+            action: 'delete',
+            module: 'training',
+            target: $training,
+            oldValues: $oldValues,
         );
     }
 }

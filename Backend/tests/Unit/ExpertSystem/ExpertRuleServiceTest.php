@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\ExpertSystem;
 
+use App\Models\ActivityLog;
 use App\Models\ExpertRule;
 use App\Models\Knowledge;
 use App\Models\KnowledgeCategory;
@@ -171,5 +172,148 @@ class ExpertRuleServiceTest extends TestCase
             'expert_rules',
             ['id' => $rule->id],
         );
+    }
+
+    public function test_it_logs_activity_when_creating_expert_rule(): void
+    {
+        $category = KnowledgeCategory::query()->create([
+            'name' => 'Performance',
+            'code' => 'PERFORMANCE',
+            'description' => 'Knowledge terkait performance.',
+            'status' => 'active',
+        ]);
+
+        $knowledge = Knowledge::query()->create([
+            'knowledge_category_id' => $category->id,
+            'name' => 'Performance Assessment',
+            'description' => 'Knowledge untuk assessment performance.',
+            'version' => 1,
+            'status' => 'active',
+        ]);
+
+        $rule = app(ExpertRuleService::class)->create([
+            'knowledge_id' => $knowledge->id,
+            'code' => 'RULE-PERF-001',
+            'name' => 'Performance Tinggi',
+            'description' => 'Rule untuk performance tinggi.',
+            'priority' => 1,
+            'status' => 'active',
+        ]);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'create',
+            'module' => 'expert_rule',
+            'target_type' => $rule->getMorphClass(),
+            'target_id' => $rule->id,
+        ]);
+    }
+
+    public function test_it_logs_activity_when_updating_expert_rule(): void
+    {
+        $category = KnowledgeCategory::query()->create([
+            'name' => 'Performance',
+            'code' => 'PERFORMANCE',
+            'description' => 'Knowledge terkait performance.',
+            'status' => 'active',
+        ]);
+
+        $knowledge = Knowledge::query()->create([
+            'knowledge_category_id' => $category->id,
+            'name' => 'Performance Assessment',
+            'description' => 'Knowledge untuk assessment performance.',
+            'version' => 1,
+            'status' => 'active',
+        ]);
+
+        $rule = ExpertRule::query()->create([
+            'knowledge_id' => $knowledge->id,
+            'code' => 'RULE-PERF-001',
+            'name' => 'Performance Tinggi',
+            'description' => 'Rule untuk performance tinggi.',
+            'priority' => 1,
+            'status' => 'active',
+        ]);
+
+        app(ExpertRuleService::class)->update(
+            $rule,
+            [
+                'name' => 'Performance Sangat Tinggi',
+                'priority' => 2,
+                'status' => 'inactive',
+            ],
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'expert_rule')
+            ->where('target_id', $rule->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Performance Tinggi',
+            $log->old_values['name'],
+        );
+
+        $this->assertSame(
+            'Performance Sangat Tinggi',
+            $log->new_values['name'],
+        );
+
+        $this->assertSame(
+            1,
+            $log->old_values['priority'],
+        );
+
+        $this->assertSame(
+            2,
+            $log->new_values['priority'],
+        );
+
+        $this->assertSame(
+            'active',
+            $log->old_values['status'],
+        );
+
+        $this->assertSame(
+            'inactive',
+            $log->new_values['status'],
+        );
+    }
+
+    public function test_it_logs_activity_before_deleting_expert_rule(): void
+    {
+        $category = KnowledgeCategory::query()->create([
+            'name' => 'Performance',
+            'code' => 'PERFORMANCE',
+            'description' => 'Knowledge terkait performance.',
+            'status' => 'active',
+        ]);
+
+        $knowledge = Knowledge::query()->create([
+            'knowledge_category_id' => $category->id,
+            'name' => 'Performance Assessment',
+            'description' => 'Knowledge untuk assessment performance.',
+            'version' => 1,
+            'status' => 'active',
+        ]);
+
+        $rule = ExpertRule::query()->create([
+            'knowledge_id' => $knowledge->id,
+            'code' => 'RULE-PERF-001',
+            'name' => 'Performance Tinggi',
+            'description' => 'Rule untuk performance tinggi.',
+            'priority' => 1,
+            'status' => 'active',
+        ]);
+
+        app(ExpertRuleService::class)->delete($rule);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'delete',
+            'module' => 'expert_rule',
+            'target_type' => $rule->getMorphClass(),
+            'target_id' => $rule->id,
+        ]);
     }
 }

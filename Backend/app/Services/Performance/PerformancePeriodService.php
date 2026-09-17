@@ -3,10 +3,15 @@
 namespace App\Services\Performance;
 
 use App\Models\PerformancePeriod;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class PerformancePeriodService
 {
+    public function __construct(
+        private readonly ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         string $search = '',
@@ -39,20 +44,71 @@ class PerformancePeriodService
 
     public function create(array $data): PerformancePeriod
     {
-        return PerformancePeriod::create($data);
+        $period = PerformancePeriod::create($data);
+
+        $this->activityLogService->log(
+            action: 'create',
+            module: 'performance_period',
+            target: $period,
+            newValues: [
+                'name' => $period->name,
+                'start_date' => $period->start_date?->toDateString(),
+                'end_date' => $period->end_date?->toDateString(),
+                'status' => $period->status,
+                'description' => $period->description,
+            ],
+        );
+
+        return $period;
     }
 
     public function update(
         PerformancePeriod $period,
         array $data
     ): PerformancePeriod {
-        $period->update($data);
+        $oldValues = [
+            'name' => $period->name,
+            'start_date' => $period->start_date?->toDateString(),
+            'end_date' => $period->end_date?->toDateString(),
+            'status' => $period->status,
+            'description' => $period->description,
+        ];
 
-        return $period->refresh();
+        $period->update($data);
+        $period->refresh();
+
+        $this->activityLogService->log(
+            action: 'update',
+            module: 'performance_period',
+            target: $period,
+            oldValues: $oldValues,
+            newValues: [
+                'name' => $period->name,
+                'start_date' => $period->start_date?->toDateString(),
+                'end_date' => $period->end_date?->toDateString(),
+                'status' => $period->status,
+                'description' => $period->description,
+            ],
+        );
+
+        return $period;
     }
 
     public function delete(PerformancePeriod $period): void
     {
+        $this->activityLogService->log(
+            action: 'delete',
+            module: 'performance_period',
+            target: $period,
+            oldValues: [
+                'name' => $period->name,
+                'start_date' => $period->start_date?->toDateString(),
+                'end_date' => $period->end_date?->toDateString(),
+                'status' => $period->status,
+                'description' => $period->description,
+            ],
+        );
+
         $period->delete();
     }
 }

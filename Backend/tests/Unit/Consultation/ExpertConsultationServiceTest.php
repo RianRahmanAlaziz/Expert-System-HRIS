@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Consultation;
 
+use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\ExpertConsultation;
@@ -170,7 +171,7 @@ class ExpertConsultationServiceTest extends TestCase
 
         $this->assertSame(
             $employee->id,
-            $result->first()->employee_id
+            $result->items()[0]->employee_id
         );
     }
 
@@ -202,7 +203,7 @@ class ExpertConsultationServiceTest extends TestCase
 
         $this->assertSame(
             'promotion',
-            $result->first()->consultation_type
+            $result->items()[0]->consultation_type
         );
     }
 
@@ -368,6 +369,67 @@ class ExpertConsultationServiceTest extends TestCase
 
         $this->assertIsArray(
             $consultation->result->suggested_actions
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_expert_consultation(): void
+    {
+        $user = User::factory()->create();
+        $employee = $this->createEmployee();
+
+        $consultation = $this->expertConsultationService->create(
+            user: $user,
+            data: [
+                'employee_id' => $employee->id,
+                'consultation_type' => 'promotion',
+            ]
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'expert_consultation')
+            ->where('target_id', $consultation->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            $consultation->getMorphClass(),
+            $log->target_type,
+        );
+
+        $this->assertSame(
+            $employee->id,
+            $log->new_values['employee_id'],
+        );
+
+        $this->assertSame(
+            $user->id,
+            $log->new_values['user_id'],
+        );
+
+        $this->assertSame(
+            'promotion',
+            $log->new_values['consultation_type'],
+        );
+
+        $this->assertSame(
+            'completed',
+            $log->new_values['status'],
+        );
+
+        $this->assertArrayHasKey(
+            'recommendation',
+            $log->new_values,
+        );
+
+        $this->assertArrayHasKey(
+            'score',
+            $log->new_values,
+        );
+
+        $this->assertArrayHasKey(
+            'confidence',
+            $log->new_values,
         );
     }
 }

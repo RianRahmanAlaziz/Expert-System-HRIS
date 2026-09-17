@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Career;
 
+use App\Models\ActivityLog;
 use App\Models\CareerPath;
 use App\Models\CareerPathPosition;
 use App\Models\Position;
@@ -548,6 +549,165 @@ class CareerPathPositionServiceTest extends TestCase
             [
                 'id' => $item->id,
             ],
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_career_path_position(): void
+    {
+        $careerPath = $this->createCareerPath();
+        $position = $this->createPosition();
+
+        $item = $this->service->create([
+            'career_path_id' => $careerPath->id,
+            'position_id' => $position->id,
+            'sequence' => 1,
+            'is_entry' => true,
+            'is_target' => false,
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'career_path_position')
+            ->where('target_id', $item->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $careerPath->id,
+            $activityLog->new_values['career_path_id'],
+        );
+
+        $this->assertSame(
+            $position->id,
+            $activityLog->new_values['position_id'],
+        );
+
+        $this->assertSame(
+            1,
+            $activityLog->new_values['sequence'],
+        );
+
+        $this->assertTrue(
+            $activityLog->new_values['is_entry'],
+        );
+
+        $this->assertFalse(
+            $activityLog->new_values['is_target'],
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_career_path_position(): void
+    {
+        $careerPath = $this->createCareerPath();
+
+        $positionOne = $this->createPosition(
+            'POS-001',
+            'Staff',
+        );
+
+        $positionTwo = $this->createPosition(
+            'POS-002',
+            'Senior Staff',
+        );
+
+        $item = $this->createCareerPathPosition(
+            careerPath: $careerPath,
+            position: $positionOne,
+        );
+
+        $result = $this->service->update(
+            $item,
+            [
+                'position_id' => $positionTwo->id,
+                'sequence' => 2,
+                'is_entry' => false,
+                'is_target' => true,
+            ],
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'career_path_position')
+            ->where('target_id', $result->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $careerPath->id,
+            $activityLog->old_values['career_path_id'],
+        );
+
+        $this->assertSame(
+            $positionOne->id,
+            $activityLog->old_values['position_id'],
+        );
+
+        $this->assertSame(
+            $positionTwo->id,
+            $activityLog->new_values['position_id'],
+        );
+
+        $this->assertSame(
+            1,
+            $activityLog->old_values['sequence'],
+        );
+
+        $this->assertSame(
+            2,
+            $activityLog->new_values['sequence'],
+        );
+
+        $this->assertFalse(
+            $activityLog->old_values['is_target'],
+        );
+
+        $this->assertTrue(
+            $activityLog->new_values['is_target'],
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_career_path_position(): void
+    {
+        $careerPath = $this->createCareerPath();
+        $position = $this->createPosition();
+
+        $item = $this->createCareerPathPosition(
+            careerPath: $careerPath,
+            position: $position,
+            attributes: [
+                'sequence' => 2,
+                'is_entry' => true,
+                'is_target' => true,
+            ],
+        );
+
+        $this->service->delete($item);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'career_path_position')
+            ->where('target_id', $item->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $careerPath->id,
+            $activityLog->old_values['career_path_id'],
+        );
+
+        $this->assertSame(
+            $position->id,
+            $activityLog->old_values['position_id'],
+        );
+
+        $this->assertSame(
+            2,
+            $activityLog->old_values['sequence'],
+        );
+
+        $this->assertTrue(
+            $activityLog->old_values['is_entry'],
+        );
+
+        $this->assertTrue(
+            $activityLog->old_values['is_target'],
         );
     }
 }

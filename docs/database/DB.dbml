@@ -603,20 +603,59 @@ Table consultation_results {
   updated_at timestamp
 }
 
+Table recommendations {
+  id bigint [pk, increment]
+  employee_id bigint [not null]
+  expert_consultation_id bigint
+  type varchar(50) [not null]
+  title varchar(255) [not null]
+  description text
+  priority varchar(30) [not null, default: 'medium']
+  status varchar(30) [not null, default: 'pending']
+  recommended_at timestamp
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (employee_id, type)
+    (status, priority)
+    recommended_at
+  }
+}
+
+Table recommendation_histories {
+  id bigint [pk, increment]
+  recommendation_id bigint [not null]
+  user_id bigint [not null]
+  old_status varchar(30)
+  new_status varchar(30) [not null]
+  notes text
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (recommendation_id, created_at)
+  }
+}
+
 
 // ============================================================
 // SYSTEM
 // ============================================================
 
 Table notifications {
-  id bigint [pk, increment]
-  user_id bigint
-  type varchar(100)
-  title varchar(255)
-  message text
+  id uuid [pk]
+  type varchar(255)
+  notifiable_type varchar(255)
+  notifiable_id bigint
+  data text
   read_at timestamp [null]
   created_at timestamp
   updated_at timestamp
+
+  Indexes {
+    (notifiable_type, notifiable_id) [name: 'notifications_notifiable_index']
+  }
 }
 
 Table activity_logs {
@@ -633,6 +672,23 @@ Table activity_logs {
   created_at timestamp
   updated_at timestamp
 }
+
+Table documents {
+  id bigint [pk, increment]
+  employee_id bigint
+  uploaded_by bigint
+  name varchar(255)
+  file_name varchar(255)
+  file_path varchar(500)
+  mime_type varchar(100)
+  file_size bigint
+  description text [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Ref: documents.employee_id > employees.id
+Ref: documents.uploaded_by > users.id
 
 
 // ============================================================
@@ -753,11 +809,18 @@ Ref: expert_consultations.user_id > users.id
 Ref: consultation_results.expert_consultation_id - expert_consultations.id
 
 
+Ref: recommendations.employee_id > employees.id [delete: cascade]
+
+Ref: recommendations.expert_consultation_id > expert_consultations.id [delete: set null]
+
+Ref: recommendation_histories.recommendation_id > recommendations.id [delete: cascade]
+
+Ref: recommendation_histories.user_id > users.id [delete: cascade]
+
 // ============================================================
 // RELATIONSHIPS — SYSTEM
 // ============================================================
 
-Ref: notifications.user_id > users.id
 
 Ref: activity_logs.user_id > users.id
 

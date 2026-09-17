@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Leave;
 
+use App\Models\ActivityLog;
 use App\Models\LeaveType;
 use App\Services\Leave\LeaveTypeService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -257,5 +258,148 @@ class LeaveTypeServiceTest extends TestCase
         $this->assertDatabaseMissing('leave_types', [
             'id' => $leaveType->id,
         ]);
+    }
+
+    public function test_it_logs_activity_when_creating_leave_type(): void
+    {
+        $leaveType = $this->leaveTypeService->create([
+            'name' => 'Annual Leave',
+            'code' => 'AL',
+            'default_days' => 12,
+            'description' => 'Annual leave for employees.',
+            'status' => 'active',
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'leave_type')
+            ->where('target_id', $leaveType->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Annual Leave',
+            $activityLog->new_values['name']
+        );
+
+        $this->assertSame(
+            'AL',
+            $activityLog->new_values['code']
+        );
+
+        $this->assertSame(
+            12,
+            $activityLog->new_values['default_days']
+        );
+
+        $this->assertSame(
+            'active',
+            $activityLog->new_values['status']
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_leave_type(): void
+    {
+        $leaveType = LeaveType::query()->create([
+            'name' => 'Annual Leave',
+            'code' => 'AL',
+            'default_days' => 12,
+            'description' => 'Old description.',
+            'status' => 'active',
+        ]);
+
+        $this->leaveTypeService->update(
+            $leaveType,
+            [
+                'name' => 'Annual Leave Updated',
+                'default_days' => 15,
+                'description' => 'Updated description.',
+                'status' => 'inactive',
+            ],
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'leave_type')
+            ->where('target_id', $leaveType->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Annual Leave',
+            $activityLog->old_values['name']
+        );
+
+        $this->assertSame(
+            'Annual Leave Updated',
+            $activityLog->new_values['name']
+        );
+
+        $this->assertSame(
+            12,
+            $activityLog->old_values['default_days']
+        );
+
+        $this->assertSame(
+            15,
+            $activityLog->new_values['default_days']
+        );
+
+        $this->assertSame(
+            'active',
+            $activityLog->old_values['status']
+        );
+
+        $this->assertSame(
+            'inactive',
+            $activityLog->new_values['status']
+        );
+
+        $this->assertSame(
+            'Old description.',
+            $activityLog->old_values['description']
+        );
+
+        $this->assertSame(
+            'Updated description.',
+            $activityLog->new_values['description']
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_leave_type(): void
+    {
+        $leaveType = LeaveType::query()->create([
+            'name' => 'Annual Leave',
+            'code' => 'AL',
+            'default_days' => 12,
+            'description' => 'Annual leave.',
+            'status' => 'active',
+        ]);
+
+        $this->leaveTypeService->delete($leaveType);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'leave_type')
+            ->where('target_id', $leaveType->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Annual Leave',
+            $activityLog->old_values['name']
+        );
+
+        $this->assertSame(
+            'AL',
+            $activityLog->old_values['code']
+        );
+
+        $this->assertSame(
+            12,
+            $activityLog->old_values['default_days']
+        );
+
+        $this->assertSame(
+            'active',
+            $activityLog->old_values['status']
+        );
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Performance;
 
+use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\PerformanceIndicator;
 use App\Models\PerformancePeriod;
@@ -589,6 +590,143 @@ class PerformanceReviewItemServiceTest extends TestCase
             [
                 'id' => $item->id,
             ]
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_item(): void
+    {
+        $review = $this->createReview();
+        $indicator = $this->createIndicator();
+
+        $item = $this->performanceReviewItemService->create(
+            $review,
+            [
+                'performance_indicator_id' => $indicator->id,
+                'score' => 90,
+                'comment' => 'Excellent performance.',
+            ]
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'performance_review_item')
+            ->where('target_type', $item->getMorphClass())
+            ->where('target_id', $item->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertEquals(
+            $review->id,
+            $log->new_values['performance_review_id']
+        );
+
+        $this->assertEquals(
+            $indicator->id,
+            $log->new_values['performance_indicator_id']
+        );
+
+        $this->assertEquals(
+            90,
+            $log->new_values['score']
+        );
+
+        $this->assertEquals(
+            'Excellent performance.',
+            $log->new_values['comment']
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_item(): void
+    {
+        $review = $this->createReview();
+
+        $indicator = $this->createIndicator();
+
+        $item = $review->items()->create([
+            'performance_indicator_id' => $indicator->id,
+            'score' => 70,
+            'comment' => 'Initial comment.',
+        ]);
+
+        $this->performanceReviewItemService->update(
+            $item,
+            [
+                'score' => 90,
+                'comment' => 'Updated comment.',
+            ]
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'performance_review_item')
+            ->where('target_type', $item->getMorphClass())
+            ->where('target_id', $item->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertEquals(
+            70,
+            $log->old_values['score']
+        );
+
+        $this->assertEquals(
+            'Initial comment.',
+            $log->old_values['comment']
+        );
+
+        $this->assertEquals(
+            90,
+            $log->new_values['score']
+        );
+
+        $this->assertEquals(
+            'Updated comment.',
+            $log->new_values['comment']
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_item(): void
+    {
+        $review = $this->createReview();
+
+        $indicator = $this->createIndicator();
+
+        $item = $review->items()->create([
+            'performance_indicator_id' => $indicator->id,
+            'score' => 80,
+            'comment' => 'To be deleted.',
+        ]);
+
+        $itemId = $item->id;
+
+        $this->performanceReviewItemService->delete($item);
+
+        $log = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'performance_review_item')
+            ->where('target_type', $item->getMorphClass())
+            ->where('target_id', $itemId)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertEquals(
+            $review->id,
+            $log->old_values['performance_review_id']
+        );
+
+        $this->assertEquals(
+            $indicator->id,
+            $log->old_values['performance_indicator_id']
+        );
+
+        $this->assertEquals(
+            80,
+            $log->old_values['score']
+        );
+
+        $this->assertEquals(
+            'To be deleted.',
+            $log->old_values['comment']
         );
     }
 }

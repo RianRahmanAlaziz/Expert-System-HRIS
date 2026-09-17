@@ -3,11 +3,16 @@
 namespace App\Services\ExpertSystem;
 
 use App\Models\KnowledgeCategory;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class KnowledgeCategoryService
 {
+    public function __construct(
+        private readonly ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?string $search = null,
@@ -31,12 +36,21 @@ class KnowledgeCategoryService
     {
         return DB::transaction(
             function () use ($data): KnowledgeCategory {
-                return KnowledgeCategory::query()->create([
+                $knowledgeCategory = KnowledgeCategory::query()->create([
                     'name' => $data['name'],
                     'code' => $data['code'],
                     'description' => $data['description'] ?? null,
                     'status' => $data['status'],
                 ]);
+
+                $this->activityLogService->log(
+                    action: 'create',
+                    module: 'knowledge_category',
+                    target: $knowledgeCategory,
+                    newValues: $knowledgeCategory->toArray(),
+                );
+
+                return $knowledgeCategory;
             },
         );
     }
@@ -45,18 +59,40 @@ class KnowledgeCategoryService
     {
         DB::transaction(
             function () use ($knowledgeCategory, $data): void {
+                $oldValues = $knowledgeCategory->toArray();
+
                 $knowledgeCategory->update($data);
-            }
+
+                $knowledgeCategory->refresh();
+
+                $this->activityLogService->log(
+                    action: 'update',
+                    module: 'knowledge_category',
+                    target: $knowledgeCategory,
+                    oldValues: $oldValues,
+                    newValues: $knowledgeCategory->toArray(),
+                );
+            },
         );
+
         return $knowledgeCategory->refresh();
     }
 
     public function delete(KnowledgeCategory $knowledgeCategory): void
     {
         DB::transaction(
-            static function () use ($knowledgeCategory): void {
+            function () use ($knowledgeCategory): void {
+                $oldValues = $knowledgeCategory->toArray();
+
+                $this->activityLogService->log(
+                    action: 'delete',
+                    module: 'knowledge_category',
+                    target: $knowledgeCategory,
+                    oldValues: $oldValues,
+                );
+
                 $knowledgeCategory->delete();
-            }
+            },
         );
     }
 }

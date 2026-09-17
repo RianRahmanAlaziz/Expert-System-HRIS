@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Performance;
 
+use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\PerformancePeriod;
@@ -334,5 +335,105 @@ class PerformancePeriodServiceTest extends TestCase
         $this->assertDatabaseMissing('performance_periods', [
             'id' => $period->id,
         ]);
+    }
+
+    public function test_it_logs_activity_when_creating_performance_period(): void
+    {
+        $period = $this->performancePeriodService->create([
+            'name' => 'Performance Review 2026',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'status' => 'draft',
+            'description' => 'Annual performance review period.',
+        ]);
+
+        $log = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'performance_period')
+            ->where('target_id', $period->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            $period->getMorphClass(),
+            $log->target_type,
+        );
+
+        $this->assertSame(
+            'Performance Review 2026',
+            $log->new_values['name'],
+        );
+
+        $this->assertSame(
+            'draft',
+            $log->new_values['status'],
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_performance_period(): void
+    {
+        $period = $this->createPerformancePeriod();
+
+        $this->performancePeriodService->update(
+            $period,
+            [
+                'name' => 'Performance Review 2026 Updated',
+                'start_date' => '2026-02-01',
+                'end_date' => '2026-11-30',
+                'status' => 'active',
+                'description' => 'Updated description.',
+            ],
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'performance_period')
+            ->where('target_id', $period->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Performance Review 2026',
+            $log->old_values['name'],
+        );
+
+        $this->assertSame(
+            'draft',
+            $log->old_values['status'],
+        );
+
+        $this->assertSame(
+            'Performance Review 2026 Updated',
+            $log->new_values['name'],
+        );
+
+        $this->assertSame(
+            'active',
+            $log->new_values['status'],
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_performance_period(): void
+    {
+        $period = $this->createPerformancePeriod();
+
+        $this->performancePeriodService->delete($period);
+
+        $log = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'performance_period')
+            ->where('target_id', $period->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Performance Review 2026',
+            $log->old_values['name'],
+        );
+
+        $this->assertSame(
+            'draft',
+            $log->old_values['status'],
+        );
     }
 }

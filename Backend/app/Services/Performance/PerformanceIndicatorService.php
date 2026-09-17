@@ -3,11 +3,16 @@
 namespace App\Services\Performance;
 
 use App\Models\PerformanceIndicator;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 class PerformanceIndicatorService
 {
+    public function __construct(
+        private readonly ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         string $search = '',
@@ -49,20 +54,80 @@ class PerformanceIndicatorService
 
     public function create(array $data): PerformanceIndicator
     {
-        return PerformanceIndicator::create($data);
+        $indicator = PerformanceIndicator::create($data);
+
+        $this->activityLogService->log(
+            action: 'create',
+            module: 'performance_indicator',
+            target: $indicator,
+            newValues: [
+                'name' => $indicator->name,
+                'description' => $indicator->description,
+                'category' => $indicator->category,
+                'target' => $indicator->target,
+                'weight' => $indicator->weight,
+                'measurement_type' => $indicator->measurement_type,
+                'is_active' => $indicator->is_active,
+            ],
+        );
+
+        return $indicator;
     }
 
     public function update(
         PerformanceIndicator $indicator,
         array $data
     ): PerformanceIndicator {
+        $oldValues = [
+            'name' => $indicator->name,
+            'description' => $indicator->description,
+            'category' => $indicator->category,
+            'target' => $indicator->target,
+            'weight' => $indicator->weight,
+            'measurement_type' => $indicator->measurement_type,
+            'is_active' => $indicator->is_active,
+        ];
+
         $indicator->update($data);
 
-        return $indicator->refresh();
+        $indicator->refresh();
+
+        $this->activityLogService->log(
+            action: 'update',
+            module: 'performance_indicator',
+            target: $indicator,
+            oldValues: $oldValues,
+            newValues: [
+                'name' => $indicator->name,
+                'description' => $indicator->description,
+                'category' => $indicator->category,
+                'target' => $indicator->target,
+                'weight' => $indicator->weight,
+                'measurement_type' => $indicator->measurement_type,
+                'is_active' => $indicator->is_active,
+            ],
+        );
+
+        return $indicator;
     }
 
     public function delete(PerformanceIndicator $indicator): void
     {
+        $this->activityLogService->log(
+            action: 'delete',
+            module: 'performance_indicator',
+            target: $indicator,
+            oldValues: [
+                'name' => $indicator->name,
+                'description' => $indicator->description,
+                'category' => $indicator->category,
+                'target' => $indicator->target,
+                'weight' => $indicator->weight,
+                'measurement_type' => $indicator->measurement_type,
+                'is_active' => $indicator->is_active,
+            ],
+        );
+
         $indicator->delete();
     }
 }

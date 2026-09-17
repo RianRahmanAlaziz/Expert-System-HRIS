@@ -7,6 +7,7 @@ use App\Models\PerformanceReview;
 use App\Models\User;
 use App\Notifications\PerformanceReviewApproved;
 use App\Notifications\PerformanceReviewRejected;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -14,7 +15,8 @@ use InvalidArgumentException;
 class PerformanceReviewService
 {
     public function __construct(
-        protected PerformanceScoreService $scoreService
+        protected PerformanceScoreService $scoreService,
+        protected ActivityLogService $activityLogService,
     ) {}
 
     public function paginate(
@@ -176,6 +178,23 @@ class PerformanceReviewService
 
             $review = PerformanceReview::create($data);
 
+            $this->activityLogService->log(
+                action: 'create',
+                module: 'performance_review',
+                target: $review,
+                newValues: [
+                    'employee_id' => $review->employee_id,
+                    'performance_period_id' => $review->performance_period_id,
+                    'reviewer_id' => $review->reviewer_id,
+                    'review_type' => $review->review_type,
+                    'status' => $review->status,
+                    'overall_score' => $review->overall_score,
+                    'review_date' => $review->review_date?->toDateString(),
+                    'comments' => $review->comments,
+                ],
+                userId: $user->id,
+            );
+
             return $review->load([
                 'employee',
                 'period',
@@ -191,14 +210,47 @@ class PerformanceReviewService
         array $data
     ): PerformanceReview {
         if ($review->status === 'approved') {
-            throw new InvalidArgumentException('Performance review yang sudah approved tidak dapat diubah.');
+            throw new InvalidArgumentException(
+                'Performance review yang sudah approved tidak dapat diubah.'
+            );
         }
 
         $this->authorizeUserAccess($user, $review);
 
+        $oldValues = [
+            'employee_id' => $review->employee_id,
+            'performance_period_id' => $review->performance_period_id,
+            'reviewer_id' => $review->reviewer_id,
+            'review_type' => $review->review_type,
+            'status' => $review->status,
+            'overall_score' => $review->overall_score,
+            'review_date' => $review->review_date?->toDateString(),
+            'comments' => $review->comments,
+        ];
+
         $review->update($data);
 
-        return $review->refresh()->load([
+        $review = $review->refresh();
+
+        $this->activityLogService->log(
+            action: 'update',
+            module: 'performance_review',
+            target: $review,
+            oldValues: $oldValues,
+            newValues: [
+                'employee_id' => $review->employee_id,
+                'performance_period_id' => $review->performance_period_id,
+                'reviewer_id' => $review->reviewer_id,
+                'review_type' => $review->review_type,
+                'status' => $review->status,
+                'overall_score' => $review->overall_score,
+                'review_date' => $review->review_date?->toDateString(),
+                'comments' => $review->comments,
+            ],
+            userId: $user->id,
+        );
+
+        return $review->load([
             'employee',
             'period',
             'reviewer',
@@ -216,6 +268,23 @@ class PerformanceReviewService
 
         $this->authorizeUserAccess($user, $review);
 
+        $this->activityLogService->log(
+            action: 'delete',
+            module: 'performance_review',
+            target: $review,
+            oldValues: [
+                'employee_id' => $review->employee_id,
+                'performance_period_id' => $review->performance_period_id,
+                'reviewer_id' => $review->reviewer_id,
+                'review_type' => $review->review_type,
+                'status' => $review->status,
+                'overall_score' => $review->overall_score,
+                'review_date' => $review->review_date?->toDateString(),
+                'comments' => $review->comments,
+            ],
+            userId: $user->id,
+        );
+
         $review->delete();
     }
 
@@ -229,7 +298,20 @@ class PerformanceReviewService
 
         $this->authorizeUserAccess($user, $review);
 
-        return $this->scoreService->calculateAndSave($review);
+        $oldScore = $review->overall_score;
+
+        $result = $this->scoreService->calculateAndSave($review);
+
+        $this->activityLogService->log(
+            action: 'calculate_score',
+            module: 'performance_review',
+            target: $result,
+            oldValues: ['overall_score' => $oldScore],
+            newValues: ['overall_score' => $result->overall_score],
+            userId: $user->id,
+        );
+
+        return $result;
     }
 
     public function submit(
@@ -254,10 +336,29 @@ class PerformanceReviewService
             }
         }
 
+        $oldValues = [
+            'status' => $review->status,
+            'overall_score' => $review->overall_score,
+            'review_date' => $review->review_date?->toDateString(),
+        ];
+
         $review->overall_score = $this->scoreService->calculate($review);
         $review->status = 'submitted';
         $review->review_date ??= now()->toDateString();
         $review->save();
+
+        $this->activityLogService->log(
+            action: 'submit',
+            module: 'performance_review',
+            target: $review,
+            oldValues: $oldValues,
+            newValues: [
+                'status' => $review->status,
+                'overall_score' => $review->overall_score,
+                'review_date' => $review->review_date?->toDateString(),
+            ],
+            userId: $user->id,
+        );
 
         return $review->refresh()->load([
             'employee',
@@ -277,8 +378,23 @@ class PerformanceReviewService
 
         $this->authorizeUserAccess($user, $review);
 
+        $oldStatus = $review->status;
+
         $review->status = 'approved';
         $review->save();
+
+        $this->activityLogService->log(
+            action: 'approve',
+            module: 'performance_review',
+            target: $review,
+            oldValues: [
+                'status' => $oldStatus,
+            ],
+            newValues: [
+                'status' => $review->status,
+            ],
+            userId: $user->id,
+        );
 
         $review->employee->user->notify(
             new PerformanceReviewApproved($review),
@@ -302,8 +418,23 @@ class PerformanceReviewService
 
         $this->authorizeUserAccess($user, $review);
 
+        $oldStatus = $review->status;
+
         $review->status = 'rejected';
         $review->save();
+
+        $this->activityLogService->log(
+            action: 'reject',
+            module: 'performance_review',
+            target: $review,
+            oldValues: [
+                'status' => $oldStatus,
+            ],
+            newValues: [
+                'status' => $review->status,
+            ],
+            userId: $user->id,
+        );
 
         $review->employee->user->notify(
             new PerformanceReviewRejected($review),

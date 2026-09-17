@@ -2,8 +2,9 @@
 
 namespace Tests\Unit\MasterData;
 
+use App\Models\ActivityLog;
 use App\Models\Position;
-use App\Services\PositionService;
+use App\Services\Position\PositionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Tests\TestCase;
@@ -168,5 +169,105 @@ class PositionServiceTest extends TestCase
         $this->assertSoftDeleted('positions', [
             'id' => $position->id,
         ]);
+    }
+
+    public function test_it_logs_activity_when_creating_position(): void
+    {
+        $position = $this->positionService->create([
+            'code' => 'HR-MGR',
+            'name' => 'HR Manager',
+            'description' => 'Human Resources Manager',
+            'level' => 5,
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'position')
+            ->where('target_id', $position->id)
+            ->firstOrFail();
+
+        $this->assertSame('HR-MGR', $activityLog->new_values['code']);
+        $this->assertSame('HR Manager', $activityLog->new_values['name']);
+        $this->assertSame(5, $activityLog->new_values['level']);
+        $this->assertSame('active', $activityLog->new_values['status']);
+        $this->assertTrue($activityLog->new_values['is_active']);
+    }
+    public function test_it_logs_activity_when_updating_position(): void
+    {
+        $position = Position::query()->create([
+            'code' => 'DEV',
+            'name' => 'Software Developer',
+            'description' => 'Old description',
+            'level' => 3,
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $this->positionService->update(
+            $position,
+            [
+                'name' => 'Senior Software Developer',
+                'description' => 'Updated description',
+                'level' => 4,
+                'status' => 'inactive',
+                'is_active' => false,
+            ],
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'position')
+            ->where('target_id', $position->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Software Developer',
+            $activityLog->old_values['name']
+        );
+
+        $this->assertSame(
+            'Senior Software Developer',
+            $activityLog->new_values['name']
+        );
+
+        $this->assertSame(3, $activityLog->old_values['level']);
+        $this->assertSame(4, $activityLog->new_values['level']);
+
+        $this->assertSame('active', $activityLog->old_values['status']);
+        $this->assertSame('inactive', $activityLog->new_values['status']);
+
+        $this->assertTrue($activityLog->old_values['is_active']);
+        $this->assertFalse($activityLog->new_values['is_active']);
+    }
+
+    public function test_it_logs_activity_when_deleting_position(): void
+    {
+        $position = Position::query()->create([
+            'code' => 'DEV',
+            'name' => 'Software Developer',
+            'description' => null,
+            'level' => 3,
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $this->positionService->delete($position);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'position')
+            ->where('target_id', $position->id)
+            ->firstOrFail();
+
+        $this->assertSame('DEV', $activityLog->old_values['code']);
+        $this->assertSame(
+            'Software Developer',
+            $activityLog->old_values['name']
+        );
+        $this->assertSame(3, $activityLog->old_values['level']);
+        $this->assertSame('active', $activityLog->old_values['status']);
+        $this->assertTrue($activityLog->old_values['is_active']);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Performance;
 
+use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\PerformanceIndicator;
@@ -1974,6 +1975,297 @@ class PerformanceReviewServiceTest extends TestCase
         Notification::assertSentTo(
             $employeeUser,
             PerformanceReviewRejected::class,
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_performance_review(): void
+    {
+        $admin = $this->createUser('admin');
+
+        $employeeUser = User::factory()->create();
+        $employee = $this->createEmployee($employeeUser);
+        $period = $this->createPeriod();
+
+        $review = $this->service->create(
+            $admin,
+            [
+                'employee_id' => $employee->id,
+                'performance_period_id' => $period->id,
+                'review_type' => 'annual',
+                'comments' => 'Initial review',
+            ],
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'performance_review')
+            ->where('target_id', $review->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame($admin->id, $log->user_id);
+        $this->assertSame($review->getMorphClass(), $log->target_type);
+        $this->assertSame($employee->id, $log->new_values['employee_id']);
+        $this->assertSame('annual', $log->new_values['review_type']);
+        $this->assertSame('draft', $log->new_values['status']);
+    }
+
+    public function test_it_logs_activity_when_updating_performance_review(): void
+    {
+        $admin = $this->createUser('admin');
+
+        $employeeUser = User::factory()->create();
+        $employee = $this->createEmployee($employeeUser);
+        $period = $this->createPeriod();
+
+        $review = $this->createReview(
+            $employee,
+            $period,
+            $admin,
+        );
+
+        $this->service->update(
+            $admin,
+            $review,
+            [
+                'comments' => 'Updated comment',
+            ],
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'performance_review')
+            ->where('target_id', $review->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Updated comment',
+            $log->new_values['comments'],
+        );
+
+        $this->assertNull(
+            $log->old_values['comments'],
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_performance_review(): void
+    {
+        $admin = $this->createUser('admin');
+
+        $employeeUser = User::factory()->create();
+        $employee = $this->createEmployee($employeeUser);
+        $period = $this->createPeriod();
+
+        $review = $this->createReview(
+            $employee,
+            $period,
+            $admin,
+        );
+
+        $this->service->delete(
+            $admin,
+            $review,
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'performance_review')
+            ->where('target_id', $review->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            'draft',
+            $log->old_values['status'],
+        );
+
+        $this->assertSame(
+            $employee->id,
+            $log->old_values['employee_id'],
+        );
+    }
+
+    public function test_it_logs_activity_when_calculating_review_score(): void
+    {
+        $admin = $this->createUser('admin');
+
+        $employeeUser = User::factory()->create();
+        $employee = $this->createEmployee($employeeUser);
+        $period = $this->createPeriod();
+
+        $review = $this->createReview(
+            $employee,
+            $period,
+            $admin,
+            [
+                'overall_score' => null,
+            ],
+        );
+
+        $this->createReviewWithItem(
+            $review,
+            100,
+            85,
+        );
+
+        $this->service->calculateScore(
+            $admin,
+            $review,
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'calculate_score')
+            ->where('module', 'performance_review')
+            ->where('target_id', $review->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertNull(
+            $log->old_values['overall_score'],
+        );
+
+        $this->assertEquals(
+            85,
+            (float) $log->new_values['overall_score'],
+        );
+    }
+
+    public function test_it_logs_activity_when_submitting_performance_review(): void
+    {
+        $admin = $this->createUser('admin');
+
+        $employeeUser = User::factory()->create();
+        $employee = $this->createEmployee($employeeUser);
+        $period = $this->createPeriod();
+
+        $review = $this->createReview(
+            $employee,
+            $period,
+            $admin,
+        );
+
+        $this->createReviewWithItem(
+            $review,
+            100,
+            85,
+        );
+
+        $this->service->submit(
+            $admin,
+            $review,
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'submit')
+            ->where('module', 'performance_review')
+            ->where('target_id', $review->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            'draft',
+            $log->old_values['status'],
+        );
+
+        $this->assertSame(
+            'submitted',
+            $log->new_values['status'],
+        );
+
+        $this->assertEquals(
+            85,
+            (float) $log->new_values['overall_score'],
+        );
+    }
+
+    public function test_it_logs_activity_when_approving_performance_review(): void
+    {
+        $admin = $this->createUser('admin');
+
+        $employeeUser = User::factory()->create();
+        $employee = $this->createEmployee($employeeUser);
+        $period = $this->createPeriod();
+
+        $review = $this->createReview(
+            $employee,
+            $period,
+            $admin,
+            [
+                'status' => 'submitted',
+            ],
+        );
+
+        $this->service->approve(
+            $admin,
+            $review,
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'approve')
+            ->where('module', 'performance_review')
+            ->where('target_id', $review->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            $admin->id,
+            $log->user_id,
+        );
+
+        $this->assertSame(
+            'submitted',
+            $log->old_values['status'],
+        );
+
+        $this->assertSame(
+            'approved',
+            $log->new_values['status'],
+        );
+    }
+
+    public function test_it_logs_activity_when_rejecting_performance_review(): void
+    {
+        $admin = $this->createUser('admin');
+
+        $employeeUser = User::factory()->create();
+        $employee = $this->createEmployee($employeeUser);
+        $period = $this->createPeriod();
+
+        $review = $this->createReview(
+            $employee,
+            $period,
+            $admin,
+            [
+                'status' => 'submitted',
+            ],
+        );
+
+        $this->service->reject(
+            $admin,
+            $review,
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'reject')
+            ->where('module', 'performance_review')
+            ->where('target_id', $review->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            $admin->id,
+            $log->user_id,
+        );
+
+        $this->assertSame(
+            'submitted',
+            $log->old_values['status'],
+        );
+
+        $this->assertSame(
+            'rejected',
+            $log->new_values['status'],
         );
     }
 }

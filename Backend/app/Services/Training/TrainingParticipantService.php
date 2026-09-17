@@ -3,11 +3,16 @@
 namespace App\Services\Training;
 
 use App\Models\TrainingParticipant;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class TrainingParticipantService
 {
+    public function __construct(
+        protected ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?int $trainingId = null,
@@ -41,12 +46,29 @@ class TrainingParticipantService
     {
         return DB::transaction(
             function () use ($data): TrainingParticipant {
-                return TrainingParticipant::query()->create([
+                $participant = TrainingParticipant::query()->create([
                     'training_id' => $data['training_id'],
                     'employee_id' => $data['employee_id'],
                     'status' => $data['status'] ?? 'registered',
                     'registered_at' => $data['registered_at'] ?? now(),
                 ]);
+
+                $this->activityLogService->log(
+                    action: 'create',
+                    module: 'training_participant',
+                    target: $participant,
+                    newValues: [
+                        'training_id' => $participant->training_id,
+                        'employee_id' => $participant->employee_id,
+                        'status' => $participant->status,
+                        'score' => $participant->score,
+                        'registered_at' => $participant->registered_at?->toDateTimeString(),
+                        'completed_at' => $participant->completed_at?->toDateTimeString(),
+                        'certificate_path' => $participant->certificate_path,
+                    ],
+                );
+
+                return $participant;
             }
         );
     }
@@ -55,19 +77,49 @@ class TrainingParticipantService
         TrainingParticipant $participant,
         array $data,
     ): TrainingParticipant {
+        $oldValues = [
+            'training_id' => $participant->training_id,
+            'employee_id' => $participant->employee_id,
+            'status' => $participant->status,
+            'score' => $participant->score,
+            'registered_at' => $participant->registered_at?->toDateTimeString(),
+            'completed_at' => $participant->completed_at?->toDateTimeString(),
+            'certificate_path' => $participant->certificate_path,
+        ];
+
         DB::transaction(
             function () use ($participant, $data): void {
                 $participant->update($data);
             }
         );
 
-        return $participant->refresh();
+        $participant->refresh();
+
+        $this->activityLogService->log(
+            action: 'update',
+            module: 'training_participant',
+            target: $participant,
+            oldValues: $oldValues,
+            newValues: [
+                'training_id' => $participant->training_id,
+                'employee_id' => $participant->employee_id,
+                'status' => $participant->status,
+                'score' => $participant->score,
+                'registered_at' => $participant->registered_at?->toDateTimeString(),
+                'completed_at' => $participant->completed_at?->toDateTimeString(),
+                'certificate_path' => $participant->certificate_path,
+            ],
+        );
+
+        return $participant;
     }
 
     public function evaluate(
         TrainingParticipant $participant,
         float $score,
     ): TrainingParticipant {
+        $oldScore = $participant->score;
+
         DB::transaction(
             function () use ($participant, $score): void {
                 $participant->update([
@@ -76,7 +128,21 @@ class TrainingParticipantService
             }
         );
 
-        return $participant->refresh();
+        $participant->refresh();
+
+        $this->activityLogService->log(
+            action: 'evaluate',
+            module: 'training_participant',
+            target: $participant,
+            oldValues: [
+                'score' => $oldScore,
+            ],
+            newValues: [
+                'score' => $participant->score,
+            ],
+        );
+
+        return $participant;
     }
 
     public function history(
@@ -92,10 +158,27 @@ class TrainingParticipantService
 
     public function delete(TrainingParticipant $participant): void
     {
+        $oldValues = [
+            'training_id' => $participant->training_id,
+            'employee_id' => $participant->employee_id,
+            'status' => $participant->status,
+            'score' => $participant->score,
+            'registered_at' => $participant->registered_at?->toDateTimeString(),
+            'completed_at' => $participant->completed_at?->toDateTimeString(),
+            'certificate_path' => $participant->certificate_path,
+        ];
+
         DB::transaction(
-            static function () use ($participant): void {
+            function () use ($participant): void {
                 $participant->delete();
             }
+        );
+
+        $this->activityLogService->log(
+            action: 'delete',
+            module: 'training_participant',
+            target: $participant,
+            oldValues: $oldValues,
         );
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Performance;
 
+use App\Models\ActivityLog;
 use App\Models\PerformanceIndicator;
 use App\Models\PerformancePeriod;
 use App\Models\PerformanceReview;
@@ -65,7 +66,6 @@ class PerformanceIndicatorServiceTest extends TestCase
         $this->assertSame(2, $result->total());
     }
 
-
     public function test_it_can_get_only_active_indicators(): void
     {
         $this->createIndicator(
@@ -94,8 +94,6 @@ class PerformanceIndicatorServiceTest extends TestCase
             $result->first()->name
         );
     }
-
-
 
     public function test_it_can_get_indicator_by_id(): void
     {
@@ -371,5 +369,139 @@ class PerformanceIndicatorServiceTest extends TestCase
         $this->assertDatabaseMissing('performance_indicators', [
             'id' => $indicator->id,
         ]);
+    }
+
+    public function test_it_logs_activity_when_creating_performance_indicator(): void
+    {
+        $indicator = $this->performanceIndicatorService->create([
+            'name' => 'Leadership',
+            'description' => 'Leadership performance indicator.',
+            'category' => 'Behavioral',
+            'target' => 85,
+            'weight' => 25,
+            'measurement_type' => 'score',
+            'is_active' => true,
+        ]);
+
+        $log = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'performance_indicator')
+            ->where('target_id', $indicator->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            $indicator->getMorphClass(),
+            $log->target_type,
+        );
+
+        $this->assertSame(
+            'Leadership',
+            $log->new_values['name'],
+        );
+
+        $this->assertSame(
+            'Behavioral',
+            $log->new_values['category'],
+        );
+
+        $this->assertSame(
+            'score',
+            $log->new_values['measurement_type'],
+        );
+
+        $this->assertTrue(
+            $log->new_values['is_active'],
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_performance_indicator(): void
+    {
+        $indicator = $this->createIndicator();
+
+        $this->performanceIndicatorService->update(
+            $indicator,
+            [
+                'name' => 'Effective Communication',
+                'description' => 'Updated indicator.',
+                'category' => 'Behavioral',
+                'target' => 90,
+                'weight' => 30,
+                'measurement_type' => 'percentage',
+                'is_active' => false,
+            ],
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'performance_indicator')
+            ->where('target_id', $indicator->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Communication',
+            $log->old_values['name'],
+        );
+
+        $this->assertSame(
+            '80.00',
+            (string) $log->old_values['target'],
+        );
+
+        $this->assertSame(
+            '20.00',
+            (string) $log->old_values['weight'],
+        );
+
+        $this->assertSame(
+            'Effective Communication',
+            $log->new_values['name'],
+        );
+
+        $this->assertSame(
+            '90.00',
+            (string) $log->new_values['target'],
+        );
+
+        $this->assertSame(
+            '30.00',
+            (string) $log->new_values['weight'],
+        );
+
+        $this->assertFalse(
+            $log->new_values['is_active'],
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_performance_indicator(): void
+    {
+        $indicator = $this->createIndicator();
+
+        $this->performanceIndicatorService->delete(
+            $indicator,
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'performance_indicator')
+            ->where('target_id', $indicator->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Communication',
+            $log->old_values['name'],
+        );
+
+        $this->assertSame(
+            'Behavioral',
+            $log->old_values['category'],
+        );
+
+        $this->assertSame(
+            'score',
+            $log->old_values['measurement_type'],
+        );
     }
 }

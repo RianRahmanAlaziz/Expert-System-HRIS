@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\V1\AttendanceController;
+use App\Http\Controllers\Api\V1\Attendance\AttendanceController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\ProfileController;
 use App\Http\Controllers\Api\V1\Career\CareerPathController;
@@ -12,8 +12,8 @@ use App\Http\Controllers\Api\V1\Competency\EmployeeCompetencyController;
 use App\Http\Controllers\Api\V1\Consultation\ExpertConsultationController;
 use App\Http\Controllers\Api\V1\Dashboard\EmployeeReportController;
 use App\Http\Controllers\Api\V1\Dashboard\HrDashboardController;
-use App\Http\Controllers\Api\V1\DepartmentController;
-use App\Http\Controllers\Api\V1\EmployeeController;
+use App\Http\Controllers\Api\V1\Department\DepartmentController;
+use App\Http\Controllers\Api\V1\Employee\EmployeeController;
 use App\Http\Controllers\Api\V1\ExpertSystem\ExpertRuleController;
 use App\Http\Controllers\Api\V1\ExpertSystem\ExpertSystemReportController;
 use App\Http\Controllers\Api\V1\ExpertSystem\KnowledgeCategoryController;
@@ -33,9 +33,9 @@ use App\Http\Controllers\Api\V1\Performance\PerformanceReportController;
 use App\Http\Controllers\Api\V1\Performance\PerformanceReviewController;
 use App\Http\Controllers\Api\V1\Performance\PerformanceReviewItemController;
 use App\Http\Controllers\Api\V1\PermissionController;
+use App\Http\Controllers\Api\V1\Position\PositionController;
 use App\Http\Controllers\Api\V1\Position\PositionRequirementCompetencyController;
 use App\Http\Controllers\Api\V1\Position\PositionRequirementController;
-use App\Http\Controllers\Api\V1\PositionController;
 use App\Http\Controllers\Api\V1\Promotion\PromotionAssessmentController;
 use App\Http\Controllers\Api\V1\Promotion\PromotionAssessmentItemController;
 use App\Http\Controllers\Api\V1\Recommendation\RecommendationController;

@@ -2,11 +2,12 @@
 
 namespace Tests\Unit\MasterData;
 
+use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
-use App\Services\EmployeeService;
+use App\Services\Employee\EmployeeService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -352,5 +353,148 @@ class EmployeeServiceTest extends TestCase
         $this->assertSoftDeleted('employees', [
             'id' => $employee->id,
         ]);
+    }
+
+    public function test_it_logs_activity_when_creating_employee(): void
+    {
+        $department = $this->createDepartment();
+        $position = $this->createPosition();
+
+        $employee = $this->employeeService->create(
+            $this->employeeData(
+                department: $department,
+                position: $position,
+            ),
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'employee')
+            ->where('target_id', $employee->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'EMP-001',
+            $activityLog->new_values['employee_number']
+        );
+
+        $this->assertSame(
+            'John',
+            $activityLog->new_values['first_name']
+        );
+
+        $this->assertSame(
+            $department->id,
+            $activityLog->new_values['department_id']
+        );
+
+        $this->assertSame(
+            $position->id,
+            $activityLog->new_values['position_id']
+        );
+
+        $this->assertSame(
+            'active',
+            $activityLog->new_values['employment_status']
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_employee(): void
+    {
+        $department = $this->createDepartment();
+        $position = $this->createPosition();
+
+        $employee = $this->employeeService->create(
+            $this->employeeData(
+                department: $department,
+                position: $position,
+            ),
+        );
+
+        $this->employeeService->update(
+            $employee,
+            [
+                'first_name' => 'Jonathan',
+                'last_name' => 'Updated',
+                'employment_status' => 'inactive',
+            ],
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'employee')
+            ->where('target_id', $employee->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'John',
+            $activityLog->old_values['first_name']
+        );
+
+        $this->assertSame(
+            'Jonathan',
+            $activityLog->new_values['first_name']
+        );
+
+        $this->assertSame(
+            'Doe',
+            $activityLog->old_values['last_name']
+        );
+
+        $this->assertSame(
+            'Updated',
+            $activityLog->new_values['last_name']
+        );
+
+        $this->assertSame(
+            'active',
+            $activityLog->old_values['employment_status']
+        );
+
+        $this->assertSame(
+            'inactive',
+            $activityLog->new_values['employment_status']
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_employee(): void
+    {
+        $department = $this->createDepartment();
+        $position = $this->createPosition();
+
+        $employee = $this->employeeService->create(
+            $this->employeeData(
+                department: $department,
+                position: $position,
+            ),
+        );
+
+        $this->employeeService->delete($employee);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'employee')
+            ->where('target_id', $employee->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'EMP-001',
+            $activityLog->old_values['employee_number']
+        );
+
+        $this->assertSame(
+            'John',
+            $activityLog->old_values['first_name']
+        );
+
+        $this->assertSame(
+            $department->id,
+            $activityLog->old_values['department_id']
+        );
+
+        $this->assertSame(
+            $position->id,
+            $activityLog->old_values['position_id']
+        );
     }
 }

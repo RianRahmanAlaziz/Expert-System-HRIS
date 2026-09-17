@@ -2,11 +2,12 @@
 
 namespace Tests\Unit\MasterData;
 
+use App\Models\ActivityLog;
 use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
-use App\Services\AttendanceService;
+use App\Services\Attendance\AttendanceService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -655,5 +656,97 @@ class AttendanceServiceTest extends TestCase
             0,
             $result[0]['present']
         );
+    }
+
+    public function test_it_logs_activity_when_clocking_in(): void
+    {
+        $employee = $this->createEmployee();
+
+        Carbon::setTestNow(
+            Carbon::parse('2026-09-04 08:00:00')
+        );
+
+        $attendance = $this->attendanceService->clockIn($employee);
+
+        $log = ActivityLog::query()
+            ->where('action', 'clock_in')
+            ->where('module', 'attendance')
+            ->where('target_type', $attendance->getMorphClass())
+            ->where('target_id', $attendance->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertEquals(
+            $employee->id,
+            $log->new_values['employee_id']
+        );
+
+        $this->assertEquals(
+            '2026-09-04',
+            $log->new_values['attendance_date']
+        );
+
+        $this->assertEquals(
+            '2026-09-04 08:00:00',
+            $log->new_values['clock_in']
+        );
+
+        $this->assertEquals(
+            'present',
+            $log->new_values['status']
+        );
+
+        $this->assertEquals(
+            0,
+            $log->new_values['late_minutes']
+        );
+
+        Carbon::setTestNow();
+    }
+
+    public function test_it_logs_activity_when_clocking_out(): void
+    {
+        $employee = $this->createEmployee();
+
+        Carbon::setTestNow(
+            Carbon::parse('2026-09-04 08:00:00')
+        );
+
+        $attendance = $this->attendanceService->clockIn($employee);
+
+        Carbon::setTestNow(
+            Carbon::parse('2026-09-04 16:00:00')
+        );
+
+        $this->attendanceService->clockOut($employee);
+
+        $log = ActivityLog::query()
+            ->where('action', 'clock_out')
+            ->where('module', 'attendance')
+            ->where('target_type', $attendance->getMorphClass())
+            ->where('target_id', $attendance->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertNull(
+            $log->old_values['clock_out']
+        );
+
+        $this->assertEquals(
+            0,
+            $log->old_values['working_minutes']
+        );
+
+        $this->assertEquals(
+            '2026-09-04 16:00:00',
+            $log->new_values['clock_out']
+        );
+
+        $this->assertEquals(
+            480,
+            $log->new_values['working_minutes']
+        );
+
+        Carbon::setTestNow();
     }
 }

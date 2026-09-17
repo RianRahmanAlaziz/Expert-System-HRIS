@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Notifications\LeaveRequestApproved;
 use App\Notifications\LeaveRequestRejected;
 use App\Notifications\LeaveRequestSubmitted;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -19,6 +20,10 @@ use RuntimeException;
 
 class LeaveRequestService
 {
+    public function __construct(
+        protected ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?int $employeeId = null,
@@ -157,6 +162,21 @@ class LeaveRequestService
                     );
                 }
 
+                $this->activityLogService->log(
+                    action: 'create',
+                    module: 'leave_request',
+                    target: $leaveRequest,
+                    newValues: [
+                        'employee_id' => $leaveRequest->employee_id,
+                        'leave_type_id' => $leaveRequest->leave_type_id,
+                        'start_date' => $leaveRequest->start_date?->toDateString(),
+                        'end_date' => $leaveRequest->end_date?->toDateString(),
+                        'total_days' => $leaveRequest->total_days,
+                        'reason' => $leaveRequest->reason,
+                        'status' => $leaveRequest->status,
+                    ],
+                );
+
                 return $leaveRequest->load([
                     'employee',
                     'leaveType',
@@ -207,14 +227,47 @@ class LeaveRequestService
 
                 $leaveBalance->save();
 
+                $oldValues = [
+                    'employee_id' => $leaveRequest->employee_id,
+                    'leave_type_id' => $leaveRequest->leave_type_id,
+                    'start_date' => Carbon::parse($leaveRequest->start_date)->toDateString(),
+                    'end_date' => Carbon::parse($leaveRequest->end_date)->toDateString(),
+                    'total_days' => $leaveRequest->total_days,
+                    'reason' => $leaveRequest->reason,
+                    'status' => $leaveRequest->status,
+                    'approved_by' => $leaveRequest->approved_by,
+                    'approved_at' => $leaveRequest->approved_at?->toDateTimeString(),
+                    'rejection_reason' => $leaveRequest->rejection_reason,
+                ];
+
                 $leaveRequest->update([
                     'status' => 'approved',
                     'approved_by' => $approvedBy->id,
                     'approved_at' => now(),
                     'rejection_reason' => null,
                 ]);
+
                 $leaveRequest->employee->user->notify(
                     new LeaveRequestApproved($leaveRequest),
+                );
+
+                $this->activityLogService->log(
+                    action: 'approve',
+                    module: 'leave_request',
+                    target: $leaveRequest,
+                    oldValues: $oldValues,
+                    newValues: [
+                        'employee_id' => $leaveRequest->employee_id,
+                        'leave_type_id' => $leaveRequest->leave_type_id,
+                        'start_date' => Carbon::parse($leaveRequest->start_date)->toDateString(),
+                        'end_date' => Carbon::parse($leaveRequest->end_date)->toDateString(),
+                        'total_days' => $leaveRequest->total_days,
+                        'reason' => $leaveRequest->reason,
+                        'status' => $leaveRequest->status,
+                        'approved_by' => $leaveRequest->approved_by,
+                        'approved_at' => $leaveRequest->approved_at?->toDateTimeString(),
+                        'rejection_reason' => $leaveRequest->rejection_reason,
+                    ],
                 );
                 return $leaveRequest
                     ->refresh()
@@ -244,6 +297,19 @@ class LeaveRequestService
                     throw new RuntimeException('Leave request hanya dapat ditolak ketika status masih pending.');
                 }
 
+                $oldValues = [
+                    'employee_id' => $leaveRequest->employee_id,
+                    'leave_type_id' => $leaveRequest->leave_type_id,
+                    'start_date' => Carbon::parse($leaveRequest->start_date)->toDateString(),
+                    'end_date' => Carbon::parse($leaveRequest->end_date)->toDateString(),
+                    'total_days' => $leaveRequest->total_days,
+                    'reason' => $leaveRequest->reason,
+                    'status' => $leaveRequest->status,
+                    'approved_by' => $leaveRequest->approved_by,
+                    'approved_at' => $leaveRequest->approved_at?->toDateTimeString(),
+                    'rejection_reason' => $leaveRequest->rejection_reason,
+                ];
+
                 $leaveRequest->update([
                     'status' => 'rejected',
                     'approved_by' => $rejectedBy->id,
@@ -253,6 +319,25 @@ class LeaveRequestService
 
                 $leaveRequest->employee->user->notify(
                     new LeaveRequestRejected($leaveRequest),
+                );
+
+                $this->activityLogService->log(
+                    action: 'reject',
+                    module: 'leave_request',
+                    target: $leaveRequest,
+                    oldValues: $oldValues,
+                    newValues: [
+                        'employee_id' => $leaveRequest->employee_id,
+                        'leave_type_id' => $leaveRequest->leave_type_id,
+                        'start_date' => Carbon::parse($leaveRequest->start_date)->toDateString(),
+                        'end_date' => Carbon::parse($leaveRequest->end_date)->toDateString(),
+                        'total_days' => $leaveRequest->total_days,
+                        'reason' => $leaveRequest->reason,
+                        'status' => $leaveRequest->status,
+                        'approved_by' => $leaveRequest->approved_by,
+                        'approved_at' => $leaveRequest->approved_at?->toDateTimeString(),
+                        'rejection_reason' => $leaveRequest->rejection_reason,
+                    ],
                 );
 
                 return $leaveRequest
@@ -285,12 +370,44 @@ class LeaveRequestService
                     throw new RuntimeException('Leave request hanya dapat dibatalkan ketika status masih pending.');
                 }
 
+                $oldValues = [
+                    'employee_id' => $leaveRequest->employee_id,
+                    'leave_type_id' => $leaveRequest->leave_type_id,
+                    'start_date' => Carbon::parse($leaveRequest->start_date)->toDateString(),
+                    'end_date' => Carbon::parse($leaveRequest->end_date)->toDateString(),
+                    'total_days' => $leaveRequest->total_days,
+                    'reason' => $leaveRequest->reason,
+                    'status' => $leaveRequest->status,
+                    'approved_by' => $leaveRequest->approved_by,
+                    'approved_at' => $leaveRequest->approved_at?->toDateTimeString(),
+                    'rejection_reason' => $leaveRequest->rejection_reason,
+                ];
+
                 $leaveRequest->update([
                     'status' => 'cancelled',
                     'approved_by' => null,
                     'approved_at' => null,
                     'rejection_reason' => null,
                 ]);
+
+                $this->activityLogService->log(
+                    action: 'cancel',
+                    module: 'leave_request',
+                    target: $leaveRequest,
+                    oldValues: $oldValues,
+                    newValues: [
+                        'employee_id' => $leaveRequest->employee_id,
+                        'leave_type_id' => $leaveRequest->leave_type_id,
+                        'start_date' => Carbon::parse($leaveRequest->start_date)->toDateString(),
+                        'end_date' => Carbon::parse($leaveRequest->end_date)->toDateString(),
+                        'total_days' => $leaveRequest->total_days,
+                        'reason' => $leaveRequest->reason,
+                        'status' => $leaveRequest->status,
+                        'approved_by' => $leaveRequest->approved_by,
+                        'approved_at' => $leaveRequest->approved_at?->toDateTimeString(),
+                        'rejection_reason' => $leaveRequest->rejection_reason,
+                    ],
+                );
 
                 return $leaveRequest
                     ->refresh()

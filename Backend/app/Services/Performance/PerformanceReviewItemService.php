@@ -5,12 +5,17 @@ namespace App\Services\Performance;
 use App\Models\PerformanceIndicator;
 use App\Models\PerformanceReview;
 use App\Models\PerformanceReviewItem;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class PerformanceReviewItemService
 {
+    public function __construct(
+        protected ActivityLogService $activityLogService,
+    ) {}
+
     public function paginateByReview(
         PerformanceReview $review,
         int $perPage = 15,
@@ -56,6 +61,18 @@ class PerformanceReviewItemService
 
         return DB::transaction(function () use ($review, $data) {
             $item = $review->items()->create($data);
+
+            $this->activityLogService->log(
+                action: 'create',
+                module: 'performance_review_item',
+                target: $item,
+                newValues: [
+                    'performance_review_id' => $item->performance_review_id,
+                    'performance_indicator_id' => $item->performance_indicator_id,
+                    'score' => $item->score,
+                    'comment' => $item->comment,
+                ],
+            );
 
             return $item->load('indicator');
         });
@@ -103,10 +120,31 @@ class PerformanceReviewItemService
                 );
             }
         }
+        $oldValues = [
+            'performance_review_id' => $item->performance_review_id,
+            'performance_indicator_id' => $item->performance_indicator_id,
+            'score' => $item->score,
+            'comment' => $item->comment,
+        ];
 
         $item->update($data);
 
-        return $item->refresh()->load('indicator');
+        $item = $item->refresh();
+
+        $this->activityLogService->log(
+            action: 'update',
+            module: 'performance_review_item',
+            target: $item,
+            oldValues: $oldValues,
+            newValues: [
+                'performance_review_id' => $item->performance_review_id,
+                'performance_indicator_id' => $item->performance_indicator_id,
+                'score' => $item->score,
+                'comment' => $item->comment,
+            ],
+        );
+
+        return $item->load('indicator');
     }
 
     public function delete(
@@ -115,8 +153,22 @@ class PerformanceReviewItemService
         $item->loadMissing('review');
 
         if ($item->review->status === 'approved') {
-            throw new InvalidArgumentException('Performance review yang sudah approved tidak dapat diubah.');
+            throw new InvalidArgumentException(
+                'Performance review yang sudah approved tidak dapat diubah.'
+            );
         }
+
+        $this->activityLogService->log(
+            action: 'delete',
+            module: 'performance_review_item',
+            target: $item,
+            oldValues: [
+                'performance_review_id' => $item->performance_review_id,
+                'performance_indicator_id' => $item->performance_indicator_id,
+                'score' => $item->score,
+                'comment' => $item->comment,
+            ],
+        );
 
         $item->delete();
     }

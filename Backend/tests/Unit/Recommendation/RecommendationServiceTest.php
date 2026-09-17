@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Recommendation;
 
+use App\Models\ActivityLog;
 use App\Models\ConsultationResult;
 use App\Models\Department;
 use App\Models\Employee;
@@ -403,6 +404,130 @@ class RecommendationServiceTest extends TestCase
         $this->assertSame(
             'approved',
             $result->items()[0]->status,
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_recommendation_from_consultation(): void
+    {
+        $user = User::factory()->create();
+
+        $employee = $this->createEmployee();
+
+        $consultation = ExpertConsultation::query()->create([
+            'employee_id' => $employee->id,
+            'user_id' => $user->id,
+            'consultation_type' => 'promotion',
+            'status' => 'completed',
+            'started_at' => now(),
+            'completed_at' => now(),
+        ]);
+
+        ConsultationResult::query()->create([
+            'expert_consultation_id' => $consultation->id,
+            'recommendation' => 'Recommended',
+            'score' => 85,
+            'confidence' => 90,
+            'reason' => 'Employee memenuhi kriteria promotion.',
+            'input_snapshot' => [],
+            'matched_rules' => [],
+            'suggested_actions' => [],
+        ]);
+
+        $recommendation = $this->service->createFromConsultation(
+            consultation: $consultation,
+            data: [
+                'type' => 'promotion',
+                'title' => 'Rekomendasi Promosi',
+                'priority' => 'high',
+            ],
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'recommendation')
+            ->where('target_id', $recommendation->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            $recommendation->getMorphClass(),
+            $log->target_type,
+        );
+
+        $this->assertSame(
+            $user->id,
+            $log->user_id,
+        );
+
+        $this->assertSame(
+            $employee->id,
+            $log->new_values['employee_id'],
+        );
+
+        $this->assertSame(
+            $consultation->id,
+            $log->new_values['expert_consultation_id'],
+        );
+
+        $this->assertSame(
+            'promotion',
+            $log->new_values['type'],
+        );
+
+        $this->assertSame(
+            'pending',
+            $log->new_values['status'],
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_recommendation_status(): void
+    {
+        $user = User::factory()->create();
+
+        $employee = $this->createEmployee();
+
+        $recommendation = Recommendation::query()->create([
+            'employee_id' => $employee->id,
+            'type' => 'promotion',
+            'title' => 'Rekomendasi Promosi',
+            'description' => 'Employee direkomendasikan untuk promosi.',
+            'priority' => 'high',
+            'status' => 'pending',
+            'recommended_at' => now(),
+        ]);
+
+        $this->service->updateStatus(
+            recommendation: $recommendation,
+            status: 'approved',
+            notes: 'Disetujui oleh HR.',
+            userId: $user->id,
+        );
+
+        $log = ActivityLog::query()
+            ->where('action', 'update_status')
+            ->where('module', 'recommendation')
+            ->where('target_id', $recommendation->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame(
+            $user->id,
+            $log->user_id,
+        );
+
+        $this->assertSame(
+            'pending',
+            $log->old_values['status'],
+        );
+
+        $this->assertSame(
+            'approved',
+            $log->new_values['status'],
+        );
+
+        $this->assertSame(
+            'Disetujui oleh HR.',
+            $log->new_values['notes'],
         );
     }
 }

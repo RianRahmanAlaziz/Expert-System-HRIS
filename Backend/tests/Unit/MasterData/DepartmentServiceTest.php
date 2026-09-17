@@ -2,8 +2,9 @@
 
 namespace Tests\Unit\MasterData;
 
+use App\Models\ActivityLog;
 use App\Models\Department;
-use App\Services\DepartmentService;
+use App\Services\Department\DepartmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Tests\TestCase;
@@ -157,5 +158,114 @@ class DepartmentServiceTest extends TestCase
         $this->assertSoftDeleted('departments', [
             'id' => $department->id,
         ]);
+    }
+
+    public function test_it_logs_activity_when_creating_department(): void
+    {
+        $department = $this->departmentService->create([
+            'code' => 'HR',
+            'name' => 'Human Resources',
+            'description' => 'Human Resources Department',
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'create',
+            'module' => 'department',
+            'target_type' => $department->getMorphClass(),
+            'target_id' => $department->id,
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'department')
+            ->where('target_id', $department->id)
+            ->firstOrFail();
+
+        $this->assertSame('HR', $activityLog->new_values['code']);
+        $this->assertSame('Human Resources', $activityLog->new_values['name']);
+        $this->assertSame('active', $activityLog->new_values['status']);
+        $this->assertTrue($activityLog->new_values['is_active']);
+    }
+
+    public function test_it_logs_activity_when_updating_department(): void
+    {
+        $department = Department::query()->create([
+            'code' => 'HR',
+            'name' => 'Human Resources',
+            'description' => 'Old description',
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $this->departmentService->update(
+            $department,
+            [
+                'name' => 'People & Culture',
+                'description' => 'Updated description',
+                'status' => 'inactive',
+                'is_active' => false,
+            ],
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'department')
+            ->where('target_id', $department->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Human Resources',
+            $activityLog->old_values['name']
+        );
+
+        $this->assertSame(
+            'People & Culture',
+            $activityLog->new_values['name']
+        );
+
+        $this->assertSame(
+            'active',
+            $activityLog->old_values['status']
+        );
+
+        $this->assertSame(
+            'inactive',
+            $activityLog->new_values['status']
+        );
+
+        $this->assertTrue($activityLog->old_values['is_active']);
+        $this->assertFalse($activityLog->new_values['is_active']);
+    }
+
+    public function test_it_logs_activity_when_deleting_department(): void
+    {
+        $department = Department::query()->create([
+            'code' => 'HR',
+            'name' => 'Human Resources',
+            'description' => 'Human Resources Department',
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $this->departmentService->delete($department);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'department')
+            ->where('target_id', $department->id)
+            ->firstOrFail();
+
+        $this->assertSame('HR', $activityLog->old_values['code']);
+        $this->assertSame(
+            'Human Resources',
+            $activityLog->old_values['name']
+        );
+        $this->assertSame(
+            'active',
+            $activityLog->old_values['status']
+        );
+        $this->assertTrue($activityLog->old_values['is_active']);
     }
 }

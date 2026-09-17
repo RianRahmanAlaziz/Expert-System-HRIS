@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Promotion;
 
+use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
@@ -505,6 +506,189 @@ class PromotionAssessmentItemServiceTest extends TestCase
             [
                 'id' => $item->id,
             ],
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_promotion_assessment_item(): void
+    {
+        $assessment = $this->createPromotionAssessment();
+
+        $item = $this->service->create([
+            'promotion_assessment_id' => $assessment->id,
+            'criterion_type' => 'competency',
+            'criterion_code' => 'COMP-COMM',
+            'criterion_name' => 'Communication',
+            'score' => 85,
+            'weight' => 25,
+            'is_passed' => true,
+            'notes' => 'Good communication competency.',
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'promotion_assessment_item')
+            ->where('target_id', $item->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $assessment->id,
+            $activityLog->new_values['promotion_assessment_id'],
+        );
+
+        $this->assertSame(
+            'competency',
+            $activityLog->new_values['criterion_type'],
+        );
+
+        $this->assertSame(
+            'COMP-COMM',
+            $activityLog->new_values['criterion_code'],
+        );
+
+        $this->assertSame(
+            'Communication',
+            $activityLog->new_values['criterion_name'],
+        );
+
+        $this->assertSame(
+            '85.00',
+            (string) $activityLog->new_values['score'],
+        );
+
+        $this->assertSame(
+            '25.00',
+            (string) $activityLog->new_values['weight'],
+        );
+
+        $this->assertTrue(
+            $activityLog->new_values['is_passed'],
+        );
+
+        $this->assertSame(
+            'Good communication competency.',
+            $activityLog->new_values['notes'],
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_promotion_assessment_item(): void
+    {
+        $item = $this->createPromotionAssessmentItem();
+
+        $result = $this->service->update(
+            $item,
+            [
+                'criterion_name' => 'Leadership',
+                'score' => 95,
+                'weight' => 30,
+                'is_passed' => false,
+                'notes' => 'Updated assessment.',
+            ],
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'promotion_assessment_item')
+            ->where('target_id', $result->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'Communication',
+            $activityLog->old_values['criterion_name'],
+        );
+
+        $this->assertSame(
+            'Leadership',
+            $activityLog->new_values['criterion_name'],
+        );
+
+        $this->assertSame(
+            '80.00',
+            (string) $activityLog->old_values['score'],
+        );
+
+        $this->assertSame(
+            '95.00',
+            (string) $activityLog->new_values['score'],
+        );
+
+        $this->assertSame(
+            '25.00',
+            (string) $activityLog->old_values['weight'],
+        );
+
+        $this->assertSame(
+            '30.00',
+            (string) $activityLog->new_values['weight'],
+        );
+
+        $this->assertTrue(
+            $activityLog->old_values['is_passed'],
+        );
+
+        $this->assertFalse(
+            $activityLog->new_values['is_passed'],
+        );
+
+        $this->assertSame(
+            'Good competency.',
+            $activityLog->old_values['notes'],
+        );
+
+        $this->assertSame(
+            'Updated assessment.',
+            $activityLog->new_values['notes'],
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_promotion_assessment_item(): void
+    {
+        $item = $this->createPromotionAssessmentItem();
+
+        $this->service->delete($item);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'promotion_assessment_item')
+            ->where('target_id', $item->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $item->promotion_assessment_id,
+            $activityLog->old_values['promotion_assessment_id'],
+        );
+
+        $this->assertSame(
+            'competency',
+            $activityLog->old_values['criterion_type'],
+        );
+
+        $this->assertSame(
+            $item->criterion_code,
+            $activityLog->old_values['criterion_code'],
+        );
+
+        $this->assertSame(
+            'Communication',
+            $activityLog->old_values['criterion_name'],
+        );
+
+        $this->assertSame(
+            '80.00',
+            (string) $activityLog->old_values['score'],
+        );
+
+        $this->assertSame(
+            '25.00',
+            (string) $activityLog->old_values['weight'],
+        );
+
+        $this->assertTrue(
+            $activityLog->old_values['is_passed'],
+        );
+
+        $this->assertSame(
+            'Good competency.',
+            $activityLog->old_values['notes'],
         );
     }
 }

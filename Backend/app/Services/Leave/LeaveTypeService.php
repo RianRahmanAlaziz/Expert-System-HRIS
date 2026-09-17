@@ -3,11 +3,16 @@
 namespace App\Services\Leave;
 
 use App\Models\LeaveType;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class LeaveTypeService
 {
+    public function __construct(
+        protected ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?string $search = null,
@@ -39,13 +44,28 @@ class LeaveTypeService
     {
         return DB::transaction(
             function () use ($data): LeaveType {
-                return LeaveType::query()->create([
+                $leaveType = LeaveType::query()->create([
                     'name' => $data['name'],
                     'code' => $data['code'],
                     'default_days' => $data['default_days'],
                     'description' => $data['description'] ?? null,
                     'status' => $data['status'],
                 ]);
+
+                $this->activityLogService->log(
+                    action: 'create',
+                    module: 'leave_type',
+                    target: $leaveType,
+                    newValues: [
+                        'name' => $leaveType->name,
+                        'code' => $leaveType->code,
+                        'default_days' => $leaveType->default_days,
+                        'description' => $leaveType->description,
+                        'status' => $leaveType->status,
+                    ],
+                );
+
+                return $leaveType;
             }
         );
     }
@@ -54,21 +74,60 @@ class LeaveTypeService
         LeaveType $leaveType,
         array $data,
     ): LeaveType {
+        $oldValues = [
+            'name' => $leaveType->name,
+            'code' => $leaveType->code,
+            'default_days' => $leaveType->default_days,
+            'description' => $leaveType->description,
+            'status' => $leaveType->status,
+        ];
+
         DB::transaction(
             function () use ($leaveType, $data): void {
                 $leaveType->update($data);
             }
         );
 
-        return $leaveType->refresh();
+        $leaveType->refresh();
+
+        $this->activityLogService->log(
+            action: 'update',
+            module: 'leave_type',
+            target: $leaveType,
+            oldValues: $oldValues,
+            newValues: [
+                'name' => $leaveType->name,
+                'code' => $leaveType->code,
+                'default_days' => $leaveType->default_days,
+                'description' => $leaveType->description,
+                'status' => $leaveType->status,
+            ],
+        );
+
+        return $leaveType;
     }
 
     public function delete(LeaveType $leaveType): void
     {
+        $oldValues = [
+            'name' => $leaveType->name,
+            'code' => $leaveType->code,
+            'default_days' => $leaveType->default_days,
+            'description' => $leaveType->description,
+            'status' => $leaveType->status,
+        ];
+
         DB::transaction(
             static function () use ($leaveType): void {
                 $leaveType->delete();
             }
+        );
+
+        $this->activityLogService->log(
+            action: 'delete',
+            module: 'leave_type',
+            target: $leaveType,
+            oldValues: $oldValues,
         );
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Competency;
 
+use App\Models\ActivityLog;
 use App\Models\CompetencyLevel;
 use App\Services\Competency\CompetencyLevelService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -293,5 +294,115 @@ class CompetencyLevelServiceTest extends TestCase
         $this->assertDatabaseMissing('competency_levels', [
             'id' => $competencyLevel->id,
         ]);
+    }
+
+    public function test_it_logs_activity_when_creating_competency_level(): void
+    {
+        $competencyLevel = $this->competencyLevelService->create([
+            'level' => 1,
+            'name' => 'Beginner',
+            'description' => 'Basic competency level.',
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'competency_level')
+            ->where('target_id', $competencyLevel->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            1,
+            $activityLog->new_values['level']
+        );
+
+        $this->assertSame(
+            'Beginner',
+            $activityLog->new_values['name']
+        );
+
+        $this->assertSame(
+            'Basic competency level.',
+            $activityLog->new_values['description']
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_competency_level(): void
+    {
+        $competencyLevel = $this->createCompetencyLevel();
+
+        $this->competencyLevelService->update(
+            $competencyLevel,
+            [
+                'level' => 2,
+                'name' => 'Intermediate',
+                'description' => 'Updated competency level.',
+            ]
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'competency_level')
+            ->where('target_id', $competencyLevel->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            1,
+            $activityLog->old_values['level']
+        );
+
+        $this->assertSame(
+            2,
+            $activityLog->new_values['level']
+        );
+
+        $this->assertSame(
+            'Beginner',
+            $activityLog->old_values['name']
+        );
+
+        $this->assertSame(
+            'Intermediate',
+            $activityLog->new_values['name']
+        );
+
+        $this->assertSame(
+            'Basic competency level.',
+            $activityLog->old_values['description']
+        );
+
+        $this->assertSame(
+            'Updated competency level.',
+            $activityLog->new_values['description']
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_competency_level(): void
+    {
+        $competencyLevel = $this->createCompetencyLevel();
+
+        $this->competencyLevelService->delete(
+            $competencyLevel
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'competency_level')
+            ->where('target_id', $competencyLevel->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            1,
+            $activityLog->old_values['level']
+        );
+
+        $this->assertSame(
+            'Beginner',
+            $activityLog->old_values['name']
+        );
+
+        $this->assertSame(
+            'Basic competency level.',
+            $activityLog->old_values['description']
+        );
     }
 }

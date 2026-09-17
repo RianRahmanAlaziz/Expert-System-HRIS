@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\MasterData;
 
+use App\Models\ActivityLog;
 use App\Models\Position;
 use App\Models\PositionRequirement;
 use App\Services\Position\PositionRequirementService;
@@ -413,6 +414,185 @@ class PositionRequirementServiceTest extends TestCase
             [
                 'id' => $positionRequirement->id,
             ],
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_position_requirement(): void
+    {
+        $position = Position::query()->create([
+            'code' => 'SSE',
+            'name' => 'Senior Software Engineer',
+            'description' => 'Senior Software Engineer',
+            'level' => 5,
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $requirement = $this->positionRequirementService->create([
+            'position_id' => $position->id,
+            'minimum_experience_years' => 3,
+            'minimum_performance_score' => 80,
+            'minimum_attendance_percentage' => 90,
+            'description' => 'Requirement for Senior Software Engineer.',
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'position_requirement')
+            ->where('target_id', $requirement->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $position->id,
+            $activityLog->new_values['position_id']
+        );
+
+        $this->assertSame(
+            '3.00',
+            (string) $activityLog->new_values['minimum_experience_years']
+        );
+
+        $this->assertSame(
+            '80.00',
+            (string) $activityLog->new_values['minimum_performance_score']
+        );
+
+        $this->assertSame(
+            'active',
+            $activityLog->new_values['status']
+        );
+
+        $this->assertTrue(
+            $activityLog->new_values['is_active']
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_position_requirement(): void
+    {
+        $position = Position::query()->create([
+            'code' => 'DEV',
+            'name' => 'Software Developer',
+            'description' => 'Software Developer',
+            'level' => 3,
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $requirement = PositionRequirement::query()->create([
+            'position_id' => $position->id,
+            'minimum_experience_years' => 2,
+            'minimum_performance_score' => 70,
+            'minimum_attendance_percentage' => 80,
+            'description' => 'Old requirement.',
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $result = $this->positionRequirementService->update(
+            $requirement,
+            [
+                'minimum_experience_years' => 4,
+                'minimum_performance_score' => 85,
+                'minimum_attendance_percentage' => 90,
+                'description' => 'Updated requirement.',
+                'status' => 'active',
+                'is_active' => true,
+            ],
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'position_requirement')
+            ->where('target_id', $result->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            '2.00',
+            (string) $activityLog->old_values['minimum_experience_years']
+        );
+
+        $this->assertSame(
+            '4.00',
+            (string) $activityLog->new_values['minimum_experience_years']
+        );
+
+        $this->assertSame(
+            '70.00',
+            (string) $activityLog->old_values['minimum_performance_score']
+        );
+
+        $this->assertSame(
+            '85.00',
+            (string) $activityLog->new_values['minimum_performance_score']
+        );
+
+        $this->assertSame(
+            'Old requirement.',
+            $activityLog->old_values['description']
+        );
+
+        $this->assertSame(
+            'Updated requirement.',
+            $activityLog->new_values['description']
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_position_requirement(): void
+    {
+        $position = Position::query()->create([
+            'code' => 'DEV',
+            'name' => 'Software Developer',
+            'description' => 'Software Developer',
+            'level' => 3,
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $requirement = PositionRequirement::query()->create([
+            'position_id' => $position->id,
+            'minimum_experience_years' => 2,
+            'minimum_performance_score' => 75,
+            'minimum_attendance_percentage' => 85,
+            'description' => 'Requirement description.',
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+
+        $this->positionRequirementService->delete(
+            $requirement,
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'position_requirement')
+            ->where('target_id', $requirement->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $position->id,
+            $activityLog->old_values['position_id']
+        );
+
+        $this->assertSame(
+            '2.00',
+            (string) $activityLog->old_values['minimum_experience_years']
+        );
+
+        $this->assertSame(
+            '75.00',
+            (string) $activityLog->old_values['minimum_performance_score']
+        );
+
+        $this->assertSame(
+            'Requirement description.',
+            $activityLog->old_values['description']
+        );
+
+        $this->assertSame(
+            'active',
+            $activityLog->old_values['status']
         );
     }
 }

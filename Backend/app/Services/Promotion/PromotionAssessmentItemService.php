@@ -3,6 +3,7 @@
 namespace App\Services\Promotion;
 
 use App\Models\PromotionAssessmentItem;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class PromotionAssessmentItemService
 {
+    public function __construct(
+        protected ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?int $promotionAssessmentId = null,
@@ -81,6 +86,22 @@ class PromotionAssessmentItemService
                     'notes' => $data['notes'] ?? null,
                 ]);
 
+                $this->activityLogService->log(
+                    action: 'create',
+                    module: 'promotion_assessment_item',
+                    target: $item,
+                    newValues: [
+                        'promotion_assessment_id' => $item->promotion_assessment_id,
+                        'criterion_type' => $item->criterion_type,
+                        'criterion_code' => $item->criterion_code,
+                        'criterion_name' => $item->criterion_name,
+                        'score' => $item->score,
+                        'weight' => $item->weight,
+                        'is_passed' => $item->is_passed,
+                        'notes' => $item->notes,
+                    ],
+                );
+
                 return $item->load('promotionAssessment');
             },
         );
@@ -95,13 +116,9 @@ class PromotionAssessmentItemService
                 $promotionAssessmentItem,
                 $data,
             ): PromotionAssessmentItem {
-                $promotionAssessmentId =
-                    $data['promotion_assessment_id']
-                    ?? $promotionAssessmentItem->promotion_assessment_id;
+                $promotionAssessmentId = $data['promotion_assessment_id']  ?? $promotionAssessmentItem->promotion_assessment_id;
 
-                $criterionCode =
-                    $data['criterion_code']
-                    ?? $promotionAssessmentItem->criterion_code;
+                $criterionCode =  $data['criterion_code']   ?? $promotionAssessmentItem->criterion_code;
 
                 $this->ensureUniqueCriterion(
                     promotionAssessmentId: $promotionAssessmentId,
@@ -109,11 +126,41 @@ class PromotionAssessmentItemService
                     ignoreId: $promotionAssessmentItem->id,
                 );
 
+                $oldValues = [
+                    'promotion_assessment_id' =>  $promotionAssessmentItem->promotion_assessment_id,
+                    'criterion_type' =>  $promotionAssessmentItem->criterion_type,
+                    'criterion_code' =>  $promotionAssessmentItem->criterion_code,
+                    'criterion_name' => $promotionAssessmentItem->criterion_name,
+                    'score' =>  $promotionAssessmentItem->score,
+                    'weight' => $promotionAssessmentItem->weight,
+                    'is_passed' => $promotionAssessmentItem->is_passed,
+                    'notes' => $promotionAssessmentItem->notes,
+                ];
+
                 $promotionAssessmentItem->update($data);
 
-                return $promotionAssessmentItem
-                    ->refresh()
-                    ->load('promotionAssessment');
+                $promotionAssessmentItem->refresh();
+
+                $this->activityLogService->log(
+                    action: 'update',
+                    module: 'promotion_assessment_item',
+                    target: $promotionAssessmentItem,
+                    oldValues: $oldValues,
+                    newValues: [
+                        'promotion_assessment_id' =>  $promotionAssessmentItem->promotion_assessment_id,
+                        'criterion_type' =>  $promotionAssessmentItem->criterion_type,
+                        'criterion_code' => $promotionAssessmentItem->criterion_code,
+                        'criterion_name' =>  $promotionAssessmentItem->criterion_name,
+                        'score' => $promotionAssessmentItem->score,
+                        'weight' => $promotionAssessmentItem->weight,
+                        'is_passed' => $promotionAssessmentItem->is_passed,
+                        'notes' => $promotionAssessmentItem->notes,
+                    ],
+                );
+
+                return $promotionAssessmentItem->load(
+                    'promotionAssessment',
+                );
             },
         );
     }
@@ -122,8 +169,26 @@ class PromotionAssessmentItemService
         PromotionAssessmentItem $promotionAssessmentItem,
     ): void {
         DB::transaction(
-            static function () use ($promotionAssessmentItem): void {
+            function () use ($promotionAssessmentItem): void {
+                $oldValues = [
+                    'promotion_assessment_id' =>  $promotionAssessmentItem->promotion_assessment_id,
+                    'criterion_type' => $promotionAssessmentItem->criterion_type,
+                    'criterion_code' => $promotionAssessmentItem->criterion_code,
+                    'criterion_name' => $promotionAssessmentItem->criterion_name,
+                    'score' =>  $promotionAssessmentItem->score,
+                    'weight' => $promotionAssessmentItem->weight,
+                    'is_passed' =>  $promotionAssessmentItem->is_passed,
+                    'notes' => $promotionAssessmentItem->notes,
+                ];
+
                 $promotionAssessmentItem->delete();
+
+                $this->activityLogService->log(
+                    action: 'delete',
+                    module: 'promotion_assessment_item',
+                    target: $promotionAssessmentItem,
+                    oldValues: $oldValues,
+                );
             },
         );
     }

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Competency;
 
+use App\Models\ActivityLog;
 use App\Models\Competency;
 use App\Models\CompetencyLevel;
 use App\Models\Department;
@@ -436,6 +437,164 @@ class EmployeeCompetencyServiceTest extends TestCase
         $this->assertEquals(
             $intermediate->id,
             $result->items()[0]->competency_level_id
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_employee_competency(): void
+    {
+        $employee = $this->createEmployee();
+        $competency = $this->createCompetency();
+        $level = $this->createCompetencyLevel();
+
+        $result = $this->employeeCompetencyService->create([
+            'employee_id' => $employee->id,
+            'competency_id' => $competency->id,
+            'competency_level_id' => $level->id,
+            'score' => 85,
+            'assessed_at' => '2026-09-01 10:00:00',
+            'notes' => 'Initial assessment.',
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'employee_competency')
+            ->where('target_id', $result->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $employee->id,
+            $activityLog->new_values['employee_id']
+        );
+
+        $this->assertSame(
+            $competency->id,
+            $activityLog->new_values['competency_id']
+        );
+
+        $this->assertSame(
+            $level->id,
+            $activityLog->new_values['competency_level_id']
+        );
+
+        $this->assertEquals(
+            85,
+            $activityLog->new_values['score']
+        );
+
+        $this->assertSame(
+            'Initial assessment.',
+            $activityLog->new_values['notes']
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_employee_competency(): void
+    {
+        $employee = $this->createEmployee();
+        $competency = $this->createCompetency();
+
+        $levelOne = $this->createCompetencyLevel(
+            level: 1,
+            name: 'Beginner',
+        );
+
+        $levelTwo = $this->createCompetencyLevel(
+            level: 2,
+            name: 'Intermediate',
+        );
+
+        $employeeCompetency = $this->createEmployeeCompetency(
+            employee: $employee,
+            competency: $competency,
+            competencyLevel: $levelOne,
+            notes: 'Initial assessment.',
+        );
+
+        $this->employeeCompetencyService->update(
+            $employeeCompetency,
+            [
+                'competency_level_id' => $levelTwo->id,
+                'score' => 90,
+                'notes' => 'Updated assessment.',
+            ]
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'employee_competency')
+            ->where('target_id', $employeeCompetency->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $levelOne->id,
+            $activityLog->old_values['competency_level_id']
+        );
+
+        $this->assertSame(
+            $levelTwo->id,
+            $activityLog->new_values['competency_level_id']
+        );
+
+        $this->assertNull(
+            $activityLog->old_values['score']
+        );
+
+        $this->assertEquals(
+            90,
+            $activityLog->new_values['score']
+        );
+
+        $this->assertSame(
+            'Initial assessment.',
+            $activityLog->old_values['notes']
+        );
+
+        $this->assertSame(
+            'Updated assessment.',
+            $activityLog->new_values['notes']
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_employee_competency(): void
+    {
+        $employee = $this->createEmployee();
+        $competency = $this->createCompetency();
+        $level = $this->createCompetencyLevel();
+
+        $employeeCompetency = $this->createEmployeeCompetency(
+            employee: $employee,
+            competency: $competency,
+            competencyLevel: $level,
+            notes: 'Initial assessment.',
+        );
+
+        $this->employeeCompetencyService->delete(
+            $employeeCompetency
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'employee_competency')
+            ->where('target_id', $employeeCompetency->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $employee->id,
+            $activityLog->old_values['employee_id']
+        );
+
+        $this->assertSame(
+            $competency->id,
+            $activityLog->old_values['competency_id']
+        );
+
+        $this->assertSame(
+            $level->id,
+            $activityLog->old_values['competency_level_id']
+        );
+
+        $this->assertSame(
+            'Initial assessment.',
+            $activityLog->old_values['notes']
         );
     }
 }

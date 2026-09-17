@@ -2,13 +2,14 @@
 
 namespace Tests\Unit\Training;
 
+use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Models\Training;
 use App\Models\TrainingParticipant;
 use App\Models\User;
-use App\Services\EmployeeService;
+use App\Services\Employee\EmployeeService;
 use App\Services\Training\TrainingParticipantService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -359,6 +360,168 @@ class TrainingParticipantServiceTest extends TestCase
             [
                 'id' => $participant->id,
             ]
+        );
+    }
+
+    public function test_it_logs_activity_when_creating_participant(): void
+    {
+        $training = Training::factory()->create();
+        $employee = $this->createEmployee();
+
+        $participant = $this->participantService->create([
+            'training_id' => $training->id,
+            'employee_id' => $employee->id,
+        ]);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'create',
+            'module' => 'training_participant',
+            'target_type' => $participant->getMorphClass(),
+            'target_id' => $participant->id,
+        ]);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'create')
+            ->where('module', 'training_participant')
+            ->where('target_id', $participant->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $training->id,
+            $activityLog->new_values['training_id']
+        );
+
+        $this->assertSame(
+            $employee->id,
+            $activityLog->new_values['employee_id']
+        );
+
+        $this->assertSame(
+            'registered',
+            $activityLog->new_values['status']
+        );
+    }
+
+    public function test_it_logs_activity_when_updating_participant(): void
+    {
+        $participant = $this->createParticipant(
+            attributes: [
+                'status' => 'registered',
+            ],
+        );
+
+        $result = $this->participantService->update(
+            $participant,
+            [
+                'status' => 'completed',
+                'completed_at' => '2026-09-17 16:00:00',
+                'certificate_path' =>
+                'certificates/training-certificate.pdf',
+            ],
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'update')
+            ->where('module', 'training_participant')
+            ->where('target_id', $result->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            'registered',
+            $activityLog->old_values['status']
+        );
+
+        $this->assertSame(
+            'completed',
+            $activityLog->new_values['status']
+        );
+
+        $this->assertNull(
+            $activityLog->old_values['completed_at']
+        );
+
+        $this->assertNotNull(
+            $activityLog->new_values['completed_at']
+        );
+
+        $this->assertSame(
+            'certificates/training-certificate.pdf',
+            $activityLog->new_values['certificate_path']
+        );
+    }
+
+    public function test_it_logs_activity_when_evaluating_participant(): void
+    {
+        $participant = $this->createParticipant(
+            attributes: [
+                'score' => null,
+            ],
+        );
+
+        $result = $this->participantService->evaluate(
+            $participant,
+            87.5,
+        );
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'evaluate')
+            ->where('module', 'training_participant')
+            ->where('target_id', $result->id)
+            ->firstOrFail();
+
+        $this->assertNull(
+            $activityLog->old_values['score']
+        );
+
+        $this->assertSame(
+            87.5,
+            (float) $activityLog->new_values['score']
+        );
+    }
+
+    public function test_it_logs_activity_when_deleting_participant(): void
+    {
+        $participant = $this->createParticipant(
+            attributes: [
+                'score' => null,
+                'status' => 'completed',
+                'score' => 87.5,
+                'certificate_path' =>
+                'certificates/training-certificate.pdf',
+            ],
+        );
+
+        $this->participantService->delete($participant);
+
+        $activityLog = ActivityLog::query()
+            ->where('action', 'delete')
+            ->where('module', 'training_participant')
+            ->where('target_id', $participant->id)
+            ->firstOrFail();
+
+        $this->assertSame(
+            $participant->training_id,
+            $activityLog->old_values['training_id']
+        );
+
+        $this->assertSame(
+            $participant->employee_id,
+            $activityLog->old_values['employee_id']
+        );
+
+        $this->assertSame(
+            'completed',
+            $activityLog->old_values['status']
+        );
+
+        $this->assertSame(
+            87.5,
+            (float) $activityLog->old_values['score']
+        );
+
+        $this->assertSame(
+            'certificates/training-certificate.pdf',
+            $activityLog->old_values['certificate_path']
         );
     }
 }

@@ -3,11 +3,16 @@
 namespace App\Services\Competency;
 
 use App\Models\CompetencyLevel;
+use App\Services\SystemSupport\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class CompetencyLevelService
 {
+    public function __construct(
+        protected ActivityLogService $activityLogService,
+    ) {}
+
     public function paginate(
         int $perPage = 15,
         ?string $search = null,
@@ -39,11 +44,24 @@ class CompetencyLevelService
     {
         return DB::transaction(
             function () use ($data): CompetencyLevel {
-                return CompetencyLevel::query()->create([
+                $competencyLevel = CompetencyLevel::query()->create([
                     'level' => $data['level'],
                     'name' => $data['name'],
                     'description' => $data['description'] ?? null,
                 ]);
+
+                $this->activityLogService->log(
+                    action: 'create',
+                    module: 'competency_level',
+                    target: $competencyLevel,
+                    newValues: [
+                        'level' => $competencyLevel->level,
+                        'name' => $competencyLevel->name,
+                        'description' => $competencyLevel->description,
+                    ],
+                );
+
+                return $competencyLevel;
             }
         );
     }
@@ -52,21 +70,54 @@ class CompetencyLevelService
         CompetencyLevel $competencyLevel,
         array $data,
     ): CompetencyLevel {
+        $oldValues = [
+            'level' => $competencyLevel->level,
+            'name' => $competencyLevel->name,
+            'description' => $competencyLevel->description,
+        ];
+
         DB::transaction(
             function () use ($competencyLevel, $data): void {
                 $competencyLevel->update($data);
             }
         );
 
-        return $competencyLevel->refresh();
+        $competencyLevel->refresh();
+
+        $this->activityLogService->log(
+            action: 'update',
+            module: 'competency_level',
+            target: $competencyLevel,
+            oldValues: $oldValues,
+            newValues: [
+                'level' => $competencyLevel->level,
+                'name' => $competencyLevel->name,
+                'description' => $competencyLevel->description,
+            ],
+        );
+
+        return $competencyLevel;
     }
 
     public function delete(CompetencyLevel $competencyLevel): void
     {
+        $oldValues = [
+            'level' => $competencyLevel->level,
+            'name' => $competencyLevel->name,
+            'description' => $competencyLevel->description,
+        ];
+
         DB::transaction(
             static function () use ($competencyLevel): void {
                 $competencyLevel->delete();
             }
+        );
+
+        $this->activityLogService->log(
+            action: 'delete',
+            module: 'competency_level',
+            target: $competencyLevel,
+            oldValues: $oldValues,
         );
     }
 }
