@@ -11,6 +11,8 @@ use App\Services\ExpertSystem\EmployeeFactProvider;
 use App\Services\ExpertSystem\InferenceEngine;
 use App\Services\ExpertSystem\WeightedScoreCalculator;
 use App\Services\SystemSupport\ActivityLogService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 final class ExpertConsultationService
@@ -21,6 +23,57 @@ final class ExpertConsultationService
         private readonly WeightedScoreCalculator $scoreCalculator,
         private readonly ActivityLogService $activityLogService,
     ) {}
+
+    public function paginate(
+        ?string $search = null,
+        ?int $employeeId = null,
+        ?string $consultationType = null,
+        int $perPage = 15,
+    ): LengthAwarePaginator {
+        return ExpertConsultation::query()
+            ->with([
+                'employee',
+                'user',
+                'result',
+            ])
+            ->when(
+                filled($search),
+                function (Builder $query) use ($search): void {
+                    $search = trim($search);
+
+                    $query->whereHas('employee', function (Builder $employeeQuery) use ($search): void {
+                        $employeeQuery
+                            ->where('employee_number', 'like', "%{$search}%")
+                            ->orWhere('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%");
+                    });
+                },
+            )
+            ->when(
+                $employeeId,
+                fn(Builder $query) => $query->where('employee_id', $employeeId),
+            )
+            ->when(
+                filled($consultationType),
+                fn(Builder $query) => $query->where(
+                    'consultation_type',
+                    trim($consultationType),
+                ),
+            )
+            ->latest()
+            ->paginate($perPage);
+    }
+
+    public function findById(int $id): ExpertConsultation
+    {
+        return ExpertConsultation::query()
+            ->with([
+                'employee',
+                'user',
+                'result',
+            ])
+            ->findOrFail($id);
+    }
 
     public function create(
         User $user,
@@ -88,6 +141,9 @@ final class ExpertConsultationService
                     $evaluation,
                 ),
                 'input_snapshot' => [
+                    'employee' => [
+                        'id' => $employee->id,
+                    ],
                     'facts' => $facts,
                 ],
                 'matched_rules' => $evaluation['matched_rules'],
@@ -105,7 +161,9 @@ final class ExpertConsultationService
                 target: $consultation,
                 newValues: [
                     'employee_id' => $consultation->employee_id,
-                    'consultation_type' =>  $consultation->consultation_type,
+                    'user_id' => $consultation->user_id,
+                    'consultation_type' => $consultation->consultation_type,
+                    'status' => $consultation->status,
                     'recommendation' => $result->recommendation,
                     'score' => $result->score,
                     'confidence' => $result->confidence,
