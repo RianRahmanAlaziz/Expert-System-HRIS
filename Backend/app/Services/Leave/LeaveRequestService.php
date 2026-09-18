@@ -247,7 +247,7 @@ class LeaveRequestService
                     'rejection_reason' => null,
                 ]);
 
-                $leaveRequest->employee->user->notify(
+                $leaveRequest->employee->user?->notify(
                     new LeaveRequestApproved($leaveRequest),
                 );
 
@@ -317,7 +317,7 @@ class LeaveRequestService
                     'rejection_reason' => $rejectionReason,
                 ]);
 
-                $leaveRequest->employee->user->notify(
+                $leaveRequest->employee->user?->notify(
                     new LeaveRequestRejected($leaveRequest),
                 );
 

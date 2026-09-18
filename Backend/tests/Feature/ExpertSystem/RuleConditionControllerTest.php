@@ -7,6 +7,7 @@ use App\Models\Knowledge;
 use App\Models\KnowledgeCategory;
 use App\Models\RuleCondition;
 use App\Models\User;
+use App\Services\ExpertSystem\ExpertParameter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -67,7 +68,7 @@ class RuleConditionControllerTest extends TestCase
     ): RuleCondition {
         return RuleCondition::query()->create(array_merge([
             'expert_rule_id' => $rule->id,
-            'parameter' => 'performance_score',
+            'parameter' => ExpertParameter::PERFORMANCE,
             'operator' => '>=',
             'value' => '80',
             'logical_operator' => 'AND',
@@ -168,7 +169,7 @@ class RuleConditionControllerTest extends TestCase
         $this->actingAs($user)
             ->postJson('/api/v1/rule-conditions', [
                 'expert_rule_id' => $rule->id,
-                'parameter' => 'performance_score',
+                'parameter' => ExpertParameter::PERFORMANCE,
                 'operator' => '>=',
                 'value' => '80',
                 'logical_operator' => 'AND',
@@ -176,11 +177,11 @@ class RuleConditionControllerTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.expert_rule.id', $rule->id)
-            ->assertJsonPath('data.parameter', 'performance_score');
+            ->assertJsonPath('data.parameter',  ExpertParameter::PERFORMANCE);
 
         $this->assertDatabaseHas('rule_conditions', [
             'expert_rule_id' => $rule->id,
-            'parameter' => 'performance_score',
+            'parameter' => ExpertParameter::PERFORMANCE,
             'operator' => '>=',
         ]);
     }
