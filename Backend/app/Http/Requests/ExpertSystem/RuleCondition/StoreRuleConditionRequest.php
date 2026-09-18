@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\ExpertSystem\RuleCondition;
 
-
+use App\Services\ExpertSystem\ExpertParameter;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -32,7 +32,7 @@ class StoreRuleConditionRequest extends FormRequest
             'parameter' => [
                 'required',
                 'string',
-                'max:100'
+                Rule::in(ExpertParameter::values()),
             ],
             'operator' => [
                 'required',

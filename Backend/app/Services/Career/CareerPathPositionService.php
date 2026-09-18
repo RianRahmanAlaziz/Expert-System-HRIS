@@ -19,8 +19,6 @@ class CareerPathPositionService
         int $perPage = 15,
         ?int $careerPathId = null,
         ?int $positionId = null,
-        ?bool $isEntry = null,
-        ?bool $isTarget = null,
     ): LengthAwarePaginator {
         return CareerPathPosition::query()
             ->with([
@@ -39,20 +37,6 @@ class CareerPathPositionService
                 fn($query) => $query->where(
                     'position_id',
                     $positionId,
-                ),
-            )
-            ->when(
-                $isEntry !== null,
-                fn($query) => $query->where(
-                    'is_entry',
-                    $isEntry,
-                ),
-            )
-            ->when(
-                $isTarget !== null,
-                fn($query) => $query->where(
-                    'is_target',
-                    $isTarget,
                 ),
             )
             ->orderBy('career_path_id')
@@ -93,8 +77,6 @@ class CareerPathPositionService
                     'career_path_id' => $data['career_path_id'],
                     'position_id' => $data['position_id'],
                     'sequence' => $data['sequence'],
-                    'is_entry' => $data['is_entry'] ?? false,
-                    'is_target' => $data['is_target'] ?? false,
                 ]);
 
                 $this->activityLogService->log(
@@ -105,8 +87,6 @@ class CareerPathPositionService
                         'career_path_id' => $careerPathPosition->career_path_id,
                         'position_id' => $careerPathPosition->position_id,
                         'sequence' => $careerPathPosition->sequence,
-                        'is_entry' => $careerPathPosition->is_entry,
-                        'is_target' => $careerPathPosition->is_target,
                     ],
                 );
 
@@ -127,11 +107,8 @@ class CareerPathPositionService
                 $careerPathPosition,
                 $data,
             ): CareerPathPosition {
-                $careerPathId = $data['career_path_id']
-                    ?? $careerPathPosition->career_path_id;
-
-                $positionId = $data['position_id']
-                    ?? $careerPathPosition->position_id;
+                $careerPathId = $data['career_path_id'] ?? $careerPathPosition->career_path_id;
+                $positionId = $data['position_id']  ?? $careerPathPosition->position_id;
 
                 $this->ensureUniquePosition(
                     careerPathId: $careerPathId,
@@ -143,8 +120,6 @@ class CareerPathPositionService
                     'career_path_id' => $careerPathPosition->career_path_id,
                     'position_id' => $careerPathPosition->position_id,
                     'sequence' => $careerPathPosition->sequence,
-                    'is_entry' => $careerPathPosition->is_entry,
-                    'is_target' => $careerPathPosition->is_target,
                 ];
 
                 $careerPathPosition->update($data);
@@ -160,8 +135,6 @@ class CareerPathPositionService
                         'career_path_id' => $careerPathPosition->career_path_id,
                         'position_id' => $careerPathPosition->position_id,
                         'sequence' => $careerPathPosition->sequence,
-                        'is_entry' => $careerPathPosition->is_entry,
-                        'is_target' => $careerPathPosition->is_target,
                     ],
                 );
 
@@ -182,8 +155,6 @@ class CareerPathPositionService
                     'career_path_id' => $careerPathPosition->career_path_id,
                     'position_id' => $careerPathPosition->position_id,
                     'sequence' => $careerPathPosition->sequence,
-                    'is_entry' => $careerPathPosition->is_entry,
-                    'is_target' => $careerPathPosition->is_target,
                 ];
 
                 $careerPathPosition->delete();

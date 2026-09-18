@@ -7,7 +7,7 @@ use App\Models\Employee;
 use App\Models\ExpertConsultation;
 use App\Models\Position;
 use App\Models\User;
-use App\Services\EmployeeService;
+use App\Services\Employee\EmployeeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;

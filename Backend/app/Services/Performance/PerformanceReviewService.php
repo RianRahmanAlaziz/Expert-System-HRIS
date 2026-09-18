@@ -25,7 +25,6 @@ class PerformanceReviewService
         string $search = '',
         ?int $employeeId = null,
         ?int $performancePeriodId = null,
-        ?string $reviewType = null,
         ?string $status = null,
     ): LengthAwarePaginator {
         $query = PerformanceReview::query()
@@ -62,9 +61,6 @@ class PerformanceReviewService
             )->when(
                 $performancePeriodId !== null,
                 fn($query) => $query->where('performance_period_id', $performancePeriodId),
-            )->when(
-                $reviewType !== null,
-                fn($query) => $query->where('review_type',   $reviewType),
             )->when(
                 $status !== null,
                 fn($query) => $query->where('status',   $status)
@@ -135,24 +131,12 @@ class PerformanceReviewService
                         'Employee hanya dapat membuat performance review untuk dirinya sendiri.'
                     );
                 }
-
-                if ($data['review_type'] !== 'self') {
-                    throw new InvalidArgumentException(
-                        'Employee hanya dapat membuat self review.'
-                    );
-                }
             }
 
             if ($user->hasRole('manager')) {
                 if ($employee->manager?->user_id !== $user->id) {
                     throw new InvalidArgumentException(
                         'Manager hanya dapat membuat review untuk direct report.'
-                    );
-                }
-
-                if ($data['review_type'] !== 'manager') {
-                    throw new InvalidArgumentException(
-                        'Manager hanya dapat membuat manager review.'
                     );
                 }
             }
@@ -186,11 +170,11 @@ class PerformanceReviewService
                     'employee_id' => $review->employee_id,
                     'performance_period_id' => $review->performance_period_id,
                     'reviewer_id' => $review->reviewer_id,
-                    'review_type' => $review->review_type,
                     'status' => $review->status,
                     'overall_score' => $review->overall_score,
-                    'review_date' => $review->review_date?->toDateString(),
+                    'rating' => $review->rating,
                     'comments' => $review->comments,
+                    'reviewed_at' => $review->reviewed_at?->toISOString(),
                 ],
                 userId: $user->id,
             );
@@ -221,11 +205,11 @@ class PerformanceReviewService
             'employee_id' => $review->employee_id,
             'performance_period_id' => $review->performance_period_id,
             'reviewer_id' => $review->reviewer_id,
-            'review_type' => $review->review_type,
             'status' => $review->status,
             'overall_score' => $review->overall_score,
-            'review_date' => $review->review_date?->toDateString(),
+            'rating' => $review->rating,
             'comments' => $review->comments,
+            'reviewed_at' => $review->reviewed_at?->toISOString(),
         ];
 
         $review->update($data);
@@ -241,11 +225,11 @@ class PerformanceReviewService
                 'employee_id' => $review->employee_id,
                 'performance_period_id' => $review->performance_period_id,
                 'reviewer_id' => $review->reviewer_id,
-                'review_type' => $review->review_type,
                 'status' => $review->status,
                 'overall_score' => $review->overall_score,
-                'review_date' => $review->review_date?->toDateString(),
+                'rating' => $review->rating,
                 'comments' => $review->comments,
+                'reviewed_at' => $review->reviewed_at?->toISOString(),
             ],
             userId: $user->id,
         );
@@ -276,11 +260,11 @@ class PerformanceReviewService
                 'employee_id' => $review->employee_id,
                 'performance_period_id' => $review->performance_period_id,
                 'reviewer_id' => $review->reviewer_id,
-                'review_type' => $review->review_type,
-                'status' => $review->status,
                 'overall_score' => $review->overall_score,
-                'review_date' => $review->review_date?->toDateString(),
+                'rating' => $review->rating,
                 'comments' => $review->comments,
+                'status' => $review->status,
+                'reviewed_at' => $review->reviewed_at?->toISOString(),
             ],
             userId: $user->id,
         );
@@ -339,12 +323,13 @@ class PerformanceReviewService
         $oldValues = [
             'status' => $review->status,
             'overall_score' => $review->overall_score,
-            'review_date' => $review->review_date?->toDateString(),
+            'rating' => $review->rating,
+            'reviewed_at' => $review->reviewed_at?->toISOString(),
         ];
 
         $review->overall_score = $this->scoreService->calculate($review);
         $review->status = 'submitted';
-        $review->review_date ??= now()->toDateString();
+        $review->reviewed_at ??= now();
         $review->save();
 
         $this->activityLogService->log(
@@ -355,7 +340,7 @@ class PerformanceReviewService
             newValues: [
                 'status' => $review->status,
                 'overall_score' => $review->overall_score,
-                'review_date' => $review->review_date?->toDateString(),
+                'reviewed_at' => $review->reviewed_at?->toDateString(),
             ],
             userId: $user->id,
         );
@@ -396,9 +381,12 @@ class PerformanceReviewService
             userId: $user->id,
         );
 
-        $review->employee->user->notify(
-            new PerformanceReviewApproved($review),
-        );
+        $employeeUser = $review->employee?->user;
+        if ($employeeUser !== null) {
+            $employeeUser->notify(
+                new PerformanceReviewApproved($review),
+            );
+        }
 
         return $review->refresh()->load([
             'employee',
@@ -436,9 +424,14 @@ class PerformanceReviewService
             userId: $user->id,
         );
 
-        $review->employee->user->notify(
-            new PerformanceReviewRejected($review),
-        );
+        $employeeUser = $review->employee?->user;
+
+        if ($employeeUser !== null) {
+            $employeeUser->notify(
+                new PerformanceReviewRejected($review),
+            );
+        }
+
         return $review->refresh()->load([
             'employee',
             'period',

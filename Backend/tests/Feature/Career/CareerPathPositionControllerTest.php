@@ -81,8 +81,6 @@ class CareerPathPositionControllerTest extends TestCase
             'career_path_id' => $careerPath->id,
             'position_id' => $position->id,
             'sequence' => 1,
-            'is_entry' => true,
-            'is_target' => false,
         ], $overrides));
     }
 
@@ -137,30 +135,6 @@ class CareerPathPositionControllerTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.position_id', $position->id);
-    }
-
-    public function test_index_can_filter_by_is_entry(): void
-    {
-        $this->createCareerPathPosition(null, null, ['is_entry' => true]);
-        $this->createCareerPathPosition(null, null, ['is_entry' => false]);
-
-        $this->actingAs($this->user)
-            ->getJson('/api/v1/career-path-positions?is_entry=1')
-            ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.is_entry', true);
-    }
-
-    public function test_index_can_filter_by_is_target(): void
-    {
-        $this->createCareerPathPosition(null, null, ['is_target' => true]);
-        $this->createCareerPathPosition(null, null, ['is_target' => false]);
-
-        $this->actingAs($this->user)
-            ->getJson('/api/v1/career-path-positions?is_target=1')
-            ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.is_target', true);
     }
 
     public function test_index_supports_pagination(): void
@@ -236,8 +210,6 @@ class CareerPathPositionControllerTest extends TestCase
                 'career_path_id' => $careerPath->id,
                 'position_id' => $position->id,
                 'sequence' => 1,
-                'is_entry' => true,
-                'is_target' => false,
             ])
             ->assertCreated()
             ->assertJsonPath('data.career_path_id', $careerPath->id)
@@ -356,13 +328,9 @@ class CareerPathPositionControllerTest extends TestCase
         $this->actingAs($this->user)
             ->putJson("/api/v1/career-path-positions/{$item->id}", [
                 'sequence' => 2,
-                'is_entry' => false,
-                'is_target' => true,
             ])
             ->assertOk()
-            ->assertJsonPath('data.sequence', 2)
-            ->assertJsonPath('data.is_entry', false)
-            ->assertJsonPath('data.is_target', true);
+            ->assertJsonPath('data.sequence', 2);
     }
 
     public function test_update_supports_partial_update(): void
@@ -370,7 +338,7 @@ class CareerPathPositionControllerTest extends TestCase
         $item = $this->createCareerPathPosition(
             null,
             null,
-            ['sequence' => 3, 'is_entry' => true],
+            ['sequence' => 3],
         );
 
         $this->actingAs($this->user)
@@ -378,9 +346,7 @@ class CareerPathPositionControllerTest extends TestCase
                 'is_target' => true,
             ])
             ->assertOk()
-            ->assertJsonPath('data.sequence', 3)
-            ->assertJsonPath('data.is_entry', true)
-            ->assertJsonPath('data.is_target', true);
+            ->assertJsonPath('data.sequence', 3);
     }
 
     public function test_update_rejects_duplicate_position_in_same_career_path(): void
@@ -446,12 +412,12 @@ class CareerPathPositionControllerTest extends TestCase
         $this->createCareerPathPosition(
             $careerPath,
             $positionTwo,
-            ['sequence' => 2, 'is_entry' => false],
+            ['sequence' => 2],
         );
         $this->createCareerPathPosition(
             $careerPath,
             $positionOne,
-            ['sequence' => 1, 'is_entry' => true],
+            ['sequence' => 1],
         );
 
         $this->actingAs($this->user)
@@ -518,8 +484,6 @@ class CareerPathPositionControllerTest extends TestCase
                         'name',
                     ],
                     'sequence',
-                    'is_entry',
-                    'is_target',
                     'created_at',
                     'updated_at',
                 ],

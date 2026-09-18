@@ -22,12 +22,6 @@ class StoreCareerPathRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => [
-                'required',
-                'string',
-                'max:50',
-                'unique:career_paths,code',
-            ],
             'name' => [
                 'required',
                 'string',

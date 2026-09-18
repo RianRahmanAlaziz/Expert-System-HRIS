@@ -16,16 +16,15 @@ class PerformanceReviewResource extends JsonResource
     {
         return [
             'id' => $this->id,
-
             'employee_id' => $this->employee_id,
             'performance_period_id' => $this->performance_period_id,
             'reviewer_id' => $this->reviewer_id,
 
-            'review_type' => $this->review_type,
-            'status' => $this->status,
             'overall_score' => $this->overall_score,
-            'review_date' => $this->review_date?->format('Y-m-d'),
+            'rating' => $this->rating,
             'comments' => $this->comments,
+            'status' => $this->status,
+            'reviewed_at' => $this->reviewed_at?->toISOString(),
 
             'employee' => $this->whenLoaded(
                 'employee',

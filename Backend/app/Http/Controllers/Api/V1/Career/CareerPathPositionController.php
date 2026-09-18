@@ -24,22 +24,10 @@ class CareerPathPositionController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware(
-                'permission:career_path_position.view',
-                only: ['index', 'show', 'byCareerPath'],
-            ),
-            new Middleware(
-                'permission:career_path_position.create',
-                only: ['store'],
-            ),
-            new Middleware(
-                'permission:career_path_position.update',
-                only: ['update'],
-            ),
-            new Middleware(
-                'permission:career_path_position.delete',
-                only: ['destroy'],
-            ),
+            new Middleware('permission:career_path_position.view', only: ['index', 'show', 'byCareerPath']),
+            new Middleware('permission:career_path_position.create', only: ['store']),
+            new Middleware('permission:career_path_position.update',  only: ['update']),
+            new Middleware('permission:career_path_position.delete',  only: ['destroy']),
         ];
     }
 
@@ -54,20 +42,10 @@ class CareerPathPositionController extends Controller implements HasMiddleware
 
         $positionId = $request->integer('position_id');
 
-        $isEntry = $request->has('is_entry')
-            ? $request->boolean('is_entry')
-            : null;
-
-        $isTarget = $request->has('is_target')
-            ? $request->boolean('is_target')
-            : null;
-
         $careerPathPositions = $this->careerPathPositionService->paginate(
             perPage: $perPage,
             careerPathId: $careerPathId > 0 ? $careerPathId : null,
             positionId: $positionId > 0 ? $positionId : null,
-            isEntry: $isEntry,
-            isTarget: $isTarget,
         );
 
         return ApiResponse::success(

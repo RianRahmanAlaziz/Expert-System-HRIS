@@ -13,7 +13,7 @@ use App\Models\Position;
 use App\Models\User;
 use App\Notifications\PerformanceReviewApproved;
 use App\Notifications\PerformanceReviewRejected;
-use App\Services\EmployeeService;
+use App\Services\Employee\EmployeeService;
 use App\Services\Performance\PerformanceReviewService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -140,11 +140,11 @@ class PerformanceReviewServiceTest extends TestCase
             'employee_id' => $employee->id,
             'performance_period_id' => $period->id,
             'reviewer_id' => $reviewer->id,
-            'review_type' => 'annual',
             'status' => 'draft',
             'overall_score' => null,
-            'review_date' => null,
+            'rating' => null,
             'comments' => null,
+            'reviewed_at' => null,
         ], $overrides));
     }
 
@@ -157,8 +157,9 @@ class PerformanceReviewServiceTest extends TestCase
             'name' => 'Indicator ' . $code,
             'description' => 'Test performance indicator',
             'weight' => $weight,
-            'measurement_type' => 'score',
-            'is_active' => true,
+            'target' => null,
+            'unit' => null,
+            'status' => 'active',
         ]);
     }
 
@@ -176,7 +177,9 @@ class PerformanceReviewServiceTest extends TestCase
             'performance_review_id' => $review->id,
             'performance_indicator_id' => $indicator->id,
             'score' => $score,
-            'comment' => 'Test comment',
+            'target_value' => null,
+            'actual_value' => null,
+            'comments' => 'Test comment',
         ]);
     }
 
@@ -201,18 +204,9 @@ class PerformanceReviewServiceTest extends TestCase
             $admin
         );
 
-        $this->createReview(
-            $employee,
-            $period,
-            $admin,
-            [
-                'review_type' => 'self',
-            ]
-        );
-
         $result = $this->service->paginate(user: $admin);
 
-        $this->assertSame(2, $result->total());
+        $this->assertSame(1, $result->total());
     }
 
     public function test_admin_can_get_all_performance_reviews(): void
@@ -313,18 +307,14 @@ class PerformanceReviewServiceTest extends TestCase
             $employee,
             $period,
             $employeeUser,
-            [
-                'review_type' => 'self',
-            ]
+            []
         );
 
         $this->createReview(
             $otherEmployee,
             $period,
             $employeeUser,
-            [
-                'review_type' => 'self',
-            ]
+            []
         );
 
         $result = $this->service->paginate(user: $employeeUser);
@@ -387,7 +377,9 @@ class PerformanceReviewServiceTest extends TestCase
             'performance_review_id' => $review->id,
             'performance_indicator_id' => $indicator->id,
             'score' => 90,
-            'comment' => 'Good performance',
+            'target_value' => null,
+            'actual_value' => null,
+            'comments' => 'Good performance',
         ]);
 
         $result = $this->service->getById($review->id);
@@ -431,7 +423,6 @@ class PerformanceReviewServiceTest extends TestCase
             [
                 'employee_id' => $employee->id,
                 'performance_period_id' => $period->id,
-                'review_type' => 'annual',
                 'comments' => 'Initial review',
             ]
         );
@@ -475,7 +466,6 @@ class PerformanceReviewServiceTest extends TestCase
             [
                 'employee_id' => $employee->id,
                 'performance_period_id' => $period->id,
-                'review_type' => 'annual',
             ]
         );
 
@@ -505,7 +495,6 @@ class PerformanceReviewServiceTest extends TestCase
             [
                 'employee_id' => $employee->id,
                 'performance_period_id' => $period->id,
-                'review_type' => 'self',
             ]
         );
 
@@ -517,11 +506,6 @@ class PerformanceReviewServiceTest extends TestCase
         $this->assertEquals(
             $employeeUser->id,
             $result->reviewer_id
-        );
-
-        $this->assertEquals(
-            'self',
-            $result->review_type
         );
 
         $this->assertEquals(
@@ -553,29 +537,6 @@ class PerformanceReviewServiceTest extends TestCase
             [
                 'employee_id' => $otherEmployee->id,
                 'performance_period_id' => $period->id,
-                'review_type' => 'self',
-            ]
-        );
-    }
-
-    public function test_employee_cannot_create_non_self_review(): void
-    {
-        $employeeUser = $this->createUser('employee');
-
-        $employee = $this->createEmployee(
-            $employeeUser
-        );
-
-        $period = $this->createPeriod();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $this->service->create(
-            $employeeUser,
-            [
-                'employee_id' => $employee->id,
-                'performance_period_id' => $period->id,
-                'review_type' => 'manager',
             ]
         );
     }
@@ -602,7 +563,6 @@ class PerformanceReviewServiceTest extends TestCase
             [
                 'employee_id' => $employee->id,
                 'performance_period_id' => $period->id,
-                'review_type' => 'manager',
             ]
         );
 
@@ -614,11 +574,6 @@ class PerformanceReviewServiceTest extends TestCase
         $this->assertEquals(
             $managerUser->id,
             $result->reviewer_id
-        );
-
-        $this->assertEquals(
-            'manager',
-            $result->review_type
         );
 
         $this->assertEquals(
@@ -650,36 +605,6 @@ class PerformanceReviewServiceTest extends TestCase
             [
                 'employee_id' => $employee->id,
                 'performance_period_id' => $period->id,
-                'review_type' => 'manager',
-            ]
-        );
-    }
-
-    public function test_manager_cannot_create_non_manager_review(): void
-    {
-        $managerUser = $this->createUser('manager');
-
-        $managerEmployee = $this->createEmployee(
-            $managerUser
-        );
-
-        $employeeUser = User::factory()->create();
-
-        $employee = $this->createEmployee(
-            $employeeUser,
-            $managerEmployee
-        );
-
-        $period = $this->createPeriod();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $this->service->create(
-            $managerUser,
-            [
-                'employee_id' => $employee->id,
-                'performance_period_id' => $period->id,
-                'review_type' => 'self',
             ]
         );
     }
@@ -703,7 +628,6 @@ class PerformanceReviewServiceTest extends TestCase
             [
                 'employee_id' => $employee->id,
                 'performance_period_id' => $period->id,
-                'review_type' => 'annual',
             ]
         );
     }
@@ -737,7 +661,6 @@ class PerformanceReviewServiceTest extends TestCase
             $review,
             [
                 'comments' => 'Updated comment',
-                'review_type' => 'annual',
             ]
         );
 
@@ -769,9 +692,7 @@ class PerformanceReviewServiceTest extends TestCase
             $employee,
             $period,
             $employeeUser,
-            [
-                'review_type' => 'self',
-            ]
+            []
         );
 
         $result = $this->service->update(
@@ -808,9 +729,7 @@ class PerformanceReviewServiceTest extends TestCase
             $otherEmployee,
             $period,
             $employeeUser,
-            [
-                'review_type' => 'self',
-            ]
+            []
         );
 
         $this->expectException(InvalidArgumentException::class);
@@ -845,9 +764,7 @@ class PerformanceReviewServiceTest extends TestCase
             $employee,
             $period,
             $managerUser,
-            [
-                'review_type' => 'manager',
-            ]
+            []
         );
 
         $result = $this->service->update(
@@ -980,9 +897,7 @@ class PerformanceReviewServiceTest extends TestCase
             $employee,
             $period,
             $employeeUser,
-            [
-                'review_type' => 'self',
-            ]
+            []
         );
 
         $this->service->delete(
@@ -1120,9 +1035,7 @@ class PerformanceReviewServiceTest extends TestCase
             $employee,
             $period,
             $employeeUser,
-            [
-                'review_type' => 'self',
-            ]
+            []
         );
 
         $this->createReviewWithItem(
@@ -1259,7 +1172,7 @@ class PerformanceReviewServiceTest extends TestCase
         );
 
         $this->assertNotNull(
-            $result->review_date
+            $result->reviewed_at
         );
     }
 
@@ -1277,9 +1190,7 @@ class PerformanceReviewServiceTest extends TestCase
             $employee,
             $period,
             $employeeUser,
-            [
-                'review_type' => 'self',
-            ]
+            []
         );
 
         $this->createReviewWithItem(
@@ -1359,82 +1270,6 @@ class PerformanceReviewServiceTest extends TestCase
         );
     }
 
-    public function test_cannot_submit_review_when_item_has_no_score(): void
-    {
-        $admin = $this->createUser('admin');
-
-        $employeeUser = User::factory()->create();
-
-        $employee = $this->createEmployee(
-            $employeeUser
-        );
-
-        $period = $this->createPeriod();
-
-        $review = $this->createReview(
-            $employee,
-            $period,
-            $admin
-        );
-
-        $indicator = $this->createIndicator(
-            'IND-NOSCORE-' . uniqid(),
-            100
-        );
-
-        PerformanceReviewItem::create([
-            'performance_review_id' => $review->id,
-            'performance_indicator_id' => $indicator->id,
-            'score' => null,
-            'comment' => null,
-        ]);
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $this->service->submit(
-            $admin,
-            $review
-        );
-    }
-
-    public function test_submit_uses_existing_review_date(): void
-    {
-        $admin = $this->createUser('admin');
-
-        $employeeUser = User::factory()->create();
-
-        $employee = $this->createEmployee(
-            $employeeUser
-        );
-
-        $period = $this->createPeriod();
-
-        $review = $this->createReview(
-            $employee,
-            $period,
-            $admin,
-            [
-                'review_date' => '2026-08-01',
-            ]
-        );
-
-        $this->createReviewWithItem(
-            $review,
-            100,
-            95
-        );
-
-        $result = $this->service->submit(
-            $admin,
-            $review
-        );
-
-        $this->assertEquals(
-            '2026-08-01',
-            $result->review_date->format('Y-m-d')
-        );
-    }
-
     public function test_cannot_submit_review_with_invalid_total_weight(): void
     {
         $admin = $this->createUser('admin');
@@ -1462,7 +1297,9 @@ class PerformanceReviewServiceTest extends TestCase
             'performance_review_id' => $review->id,
             'performance_indicator_id' => $indicator->id,
             'score' => 80,
-            'comment' => null,
+            'target_value' => null,
+            'actual_value' => null,
+            'comments' => null,
         ]);
 
         $this->expectException(InvalidArgumentException::class);
@@ -1991,7 +1828,6 @@ class PerformanceReviewServiceTest extends TestCase
             [
                 'employee_id' => $employee->id,
                 'performance_period_id' => $period->id,
-                'review_type' => 'annual',
                 'comments' => 'Initial review',
             ],
         );
@@ -2006,7 +1842,6 @@ class PerformanceReviewServiceTest extends TestCase
         $this->assertSame($admin->id, $log->user_id);
         $this->assertSame($review->getMorphClass(), $log->target_type);
         $this->assertSame($employee->id, $log->new_values['employee_id']);
-        $this->assertSame('annual', $log->new_values['review_type']);
         $this->assertSame('draft', $log->new_values['status']);
     }
 

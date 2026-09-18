@@ -16,13 +16,13 @@ class PerformanceIndicatorResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'code' => $this->code,
             'name' => $this->name,
             'description' => $this->description,
-            'category' => $this->category,
-            'target' => $this->target,
             'weight' => $this->weight,
-            'measurement_type' => $this->measurement_type,
-            'is_active' => $this->is_active,
+            'target' => $this->target,
+            'unit' => $this->unit,
+            'status' => $this->status,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

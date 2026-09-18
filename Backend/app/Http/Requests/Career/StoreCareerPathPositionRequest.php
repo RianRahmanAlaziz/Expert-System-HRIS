@@ -37,14 +37,6 @@ class StoreCareerPathPositionRequest extends FormRequest
                 'integer',
                 'min:1',
             ],
-            'is_entry' => [
-                'sometimes',
-                'boolean'
-            ],
-            'is_target' => [
-                'sometimes',
-                'boolean'
-            ],
         ];
     }
 }

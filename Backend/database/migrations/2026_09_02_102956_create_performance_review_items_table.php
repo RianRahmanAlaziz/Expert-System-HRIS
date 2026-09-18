@@ -22,9 +22,8 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(
-                ['performance_review_id', 'performance_indicator_id']
-            );
+            $table->index('performance_indicator_id');
+            $table->index('performance_review_id');
         });
     }
 

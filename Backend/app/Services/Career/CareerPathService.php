@@ -18,9 +18,7 @@ class CareerPathService
             ->when(
                 $search !== null,
                 fn($query) => $query->where(function ($query) use ($search): void {
-                    $query
-                        ->where('code', 'like', "%{$search}%")
-                        ->orWhere('name', 'like', "%{$search}%");
+                    $query->Where('name', 'like', "%{$search}%");
                 }),
             )
             ->when(
@@ -46,7 +44,6 @@ class CareerPathService
         return DB::transaction(
             function () use ($data): CareerPath {
                 return CareerPath::query()->create([
-                    'code' => $data['code'],
                     'name' => $data['name'],
                     'description' => $data['description'] ?? null,
                     'status' => $data['status'],

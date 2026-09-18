@@ -8,7 +8,7 @@ use App\Models\PerformancePeriod;
 use App\Models\PerformanceReview;
 use App\Models\Position;
 use App\Models\User;
-use App\Services\EmployeeService;
+use App\Services\Employee\EmployeeService;
 use App\Services\Performance\PerformanceReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;

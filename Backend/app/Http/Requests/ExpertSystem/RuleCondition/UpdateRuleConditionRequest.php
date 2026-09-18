@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\ExpertSystem\RuleCondition;
 
-
+use App\Services\ExpertSystem\ExpertParameter;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -34,7 +34,7 @@ class UpdateRuleConditionRequest extends FormRequest
                 'sometimes',
                 'required',
                 'string',
-                'max:100'
+                Rule::in(ExpertParameter::values()),
             ],
             'operator' => [
                 'sometimes',

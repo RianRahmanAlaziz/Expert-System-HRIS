@@ -100,11 +100,6 @@ class UpdateEmployeeRequest extends FormRequest
                 'string',
             ],
 
-            'join_date' => [
-                'sometimes',
-                'date',
-            ],
-
             'employment_type' => [
                 'sometimes',
                 'string',

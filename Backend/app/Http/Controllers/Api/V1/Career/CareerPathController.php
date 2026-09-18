@@ -23,24 +23,13 @@ class CareerPathController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware(
-                'permission:career_path.view',
-                only: ['index', 'show'],
-            ),
-            new Middleware(
-                'permission:career_path.create',
-                only: ['store'],
-            ),
-            new Middleware(
-                'permission:career_path.update',
-                only: ['update'],
-            ),
-            new Middleware(
-                'permission:career_path.delete',
-                only: ['destroy'],
-            ),
+            new Middleware('permission:career_path.view', only: ['index', 'show']),
+            new Middleware('permission:career_path.create', only: ['store']),
+            new Middleware('permission:career_path.update', only: ['update']),
+            new Middleware('permission:career_path.delete', only: ['destroy']),
         ];
     }
+
     public function index(Request $request): JsonResponse
     {
         $perPage = min(

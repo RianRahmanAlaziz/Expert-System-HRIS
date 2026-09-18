@@ -70,7 +70,7 @@ class PerformanceReviewItemService
                     'performance_review_id' => $item->performance_review_id,
                     'performance_indicator_id' => $item->performance_indicator_id,
                     'score' => $item->score,
-                    'comment' => $item->comment,
+                    'comments' => $item->comments,
                 ],
             );
 
@@ -124,7 +124,7 @@ class PerformanceReviewItemService
             'performance_review_id' => $item->performance_review_id,
             'performance_indicator_id' => $item->performance_indicator_id,
             'score' => $item->score,
-            'comment' => $item->comment,
+            'comments' => $item->comments,
         ];
 
         $item->update($data);
@@ -140,7 +140,7 @@ class PerformanceReviewItemService
                 'performance_review_id' => $item->performance_review_id,
                 'performance_indicator_id' => $item->performance_indicator_id,
                 'score' => $item->score,
-                'comment' => $item->comment,
+                'comments' => $item->comments,
             ],
         );
 
@@ -166,7 +166,7 @@ class PerformanceReviewItemService
                 'performance_review_id' => $item->performance_review_id,
                 'performance_indicator_id' => $item->performance_indicator_id,
                 'score' => $item->score,
-                'comment' => $item->comment,
+                'comments' => $item->comments,
             ],
         );
 

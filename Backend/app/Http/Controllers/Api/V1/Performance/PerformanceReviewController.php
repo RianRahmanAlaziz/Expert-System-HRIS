@@ -67,7 +67,6 @@ class PerformanceReviewController extends Controller implements HasMiddleware
             search: $search,
             employeeId: $employeeId,
             performancePeriodId: $performancePeriodId,
-            reviewType: $request->query('review_type'),
             status: $request->query('status'),
         );
 

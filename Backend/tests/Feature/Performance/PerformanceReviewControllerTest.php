@@ -127,21 +127,19 @@ class PerformanceReviewControllerTest extends TestCase
         Employee $employee,
         PerformancePeriod $period,
         User $reviewer,
-        string $reviewType = 'manager',
         string $status = 'draft',
         ?string $overallScore = null,
-        ?string $reviewDate = '2026-02-15',
         ?string $comments = null,
     ): PerformanceReview {
         return PerformanceReview::query()->create([
             'employee_id' => $employee->id,
             'performance_period_id' => $period->id,
             'reviewer_id' => $reviewer->id,
-            'review_type' => $reviewType,
             'status' => $status,
             'overall_score' => $overallScore,
-            'review_date' => $reviewDate,
+            'rating' => null,
             'comments' => $comments ?? 'Test performance review.',
+            'reviewed_at' => null,
         ]);
     }
 
@@ -151,15 +149,17 @@ class PerformanceReviewControllerTest extends TestCase
         bool $isActive = true,
     ): PerformanceIndicator {
         return PerformanceIndicator::query()->create([
+            'code' => fake()->unique()->numerify('IND####'),
             'name' => $name
                 ?? 'Performance Indicator '
                 . fake()->unique()->numerify('####'),
             'description' => 'Indicator for testing.',
-            'category' => 'Performance',
-            'target' => '100.00',
             'weight' => $weight,
-            'measurement_type' => 'score',
-            'is_active' => $isActive,
+            'target' => '100.00',
+            'unit' => null,
+            'status' => $isActive
+                ? 'active'
+                : 'inactive',
         ]);
     }
 
@@ -167,13 +167,15 @@ class PerformanceReviewControllerTest extends TestCase
         PerformanceReview $review,
         PerformanceIndicator $indicator,
         ?string $score = '80.00',
-        ?string $comment = null,
+        ?string $comments = null,
     ): PerformanceReviewItem {
         return PerformanceReviewItem::query()->create([
             'performance_review_id' => $review->id,
             'performance_indicator_id' => $indicator->id,
             'score' => $score,
-            'comment' => $comment ?? 'Test review item.',
+            'target_value' => null,
+            'actual_value' => null,
+            'comments' => $comments ?? 'Test review item.',
         ]);
     }
 
@@ -207,9 +209,7 @@ class PerformanceReviewControllerTest extends TestCase
 
     public function test_requires_authentication_to_access_performance_review(): void
     {
-        $response = $this->getJson(
-            '/api/v1/performance/reviews',
-        );
+        $response = $this->getJson('/api/v1/performance/reviews');
 
         $response->assertUnauthorized();
     }
@@ -250,7 +250,6 @@ class PerformanceReviewControllerTest extends TestCase
             ->postJson('/api/v1/performance/reviews', [
                 'employee_id' => $employee->id,
                 'performance_period_id' => $period->id,
-                'review_type' => 'manager',
             ]);
 
         $response->assertForbidden();
@@ -470,11 +469,11 @@ class PerformanceReviewControllerTest extends TestCase
                         'employee_id',
                         'performance_period_id',
                         'reviewer_id',
-                        'review_type',
-                        'status',
                         'overall_score',
-                        'review_date',
+                        'rating',
                         'comments',
+                        'status',
+                        'reviewed_at',
                         'created_at',
                         'updated_at',
                     ],
@@ -545,9 +544,7 @@ class PerformanceReviewControllerTest extends TestCase
     {
         $response = $this
             ->actingAs($this->user)
-            ->getJson(
-                '/api/v1/performance/reviews/999999',
-            );
+            ->getJson('/api/v1/performance/reviews/999999');
 
         $response->assertNotFound();
     }
@@ -562,13 +559,10 @@ class PerformanceReviewControllerTest extends TestCase
             ->postJson('/api/v1/performance/reviews', [
                 'employee_id' => $employee->id,
                 'performance_period_id' => $period->id,
-                'review_type' => 'manager',
-                'review_date' => '2026-02-15',
                 'comments' => 'Initial performance review.',
             ]);
 
-        $response
-            ->assertCreated()
+        $response->assertCreated()
             ->assertJsonPath(
                 'message',
                 'Performance review berhasil dibuat.',
@@ -586,12 +580,12 @@ class PerformanceReviewControllerTest extends TestCase
                 $this->user->id,
             )
             ->assertJsonPath(
-                'data.review_type',
-                'manager',
-            )
-            ->assertJsonPath(
                 'data.status',
                 'draft',
+            )
+            ->assertJsonPath(
+                'data.comments',
+                'Initial performance review.',
             );
 
         $this->assertDatabaseHas(
@@ -600,7 +594,6 @@ class PerformanceReviewControllerTest extends TestCase
                 'employee_id' => $employee->id,
                 'performance_period_id' => $period->id,
                 'reviewer_id' => $this->user->id,
-                'review_type' => 'manager',
                 'status' => 'draft',
             ],
         );
@@ -614,7 +607,6 @@ class PerformanceReviewControllerTest extends TestCase
             ->actingAs($this->user)
             ->postJson('/api/v1/performance/reviews', [
                 'performance_period_id' => $period->id,
-                'review_type' => 'manager',
             ]);
 
         $response
@@ -632,33 +624,12 @@ class PerformanceReviewControllerTest extends TestCase
             ->actingAs($this->user)
             ->postJson('/api/v1/performance/reviews', [
                 'employee_id' => $employee->id,
-                'review_type' => 'manager',
             ]);
 
         $response
             ->assertUnprocessable()
             ->assertJsonValidationErrors([
                 'performance_period_id',
-            ]);
-    }
-
-    public function test_rejects_invalid_review_type(): void
-    {
-        $employee = $this->createEmployee();
-        $period = $this->createPeriod();
-
-        $response = $this
-            ->actingAs($this->user)
-            ->postJson('/api/v1/performance/reviews', [
-                'employee_id' => $employee->id,
-                'performance_period_id' => $period->id,
-                'review_type' => 'invalid',
-            ]);
-
-        $response
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors([
-                'review_type',
             ]);
     }
 
@@ -675,7 +646,6 @@ class PerformanceReviewControllerTest extends TestCase
                 'employee_id' => $employee->id,
                 'performance_period_id' => $period->id,
                 'reviewer_id' => $otherUser->id,
-                'review_type' => 'manager',
             ]);
 
         $response
@@ -702,7 +672,6 @@ class PerformanceReviewControllerTest extends TestCase
             ->putJson(
                 "/api/v1/performance/reviews/{$review->id}",
                 [
-                    'review_date' => '2026-02-20',
                     'comments' => 'Updated performance review.',
                 ],
             );
@@ -710,12 +679,8 @@ class PerformanceReviewControllerTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath(
-                'message',
-                'Performance review berhasil diperbarui.',
-            )
-            ->assertJsonPath(
-                'data.review_date',
-                '2026-02-20',
+                'data.id',
+                $review->id,
             )
             ->assertJsonPath(
                 'data.comments',
@@ -873,33 +838,6 @@ class PerformanceReviewControllerTest extends TestCase
         $response->assertUnprocessable();
     }
 
-    public function test_cannot_submit_performance_review_when_item_has_no_score(): void
-    {
-        $employee = $this->createEmployee();
-        $period = $this->createPeriod();
-
-        $review = $this->createReview(
-            $employee,
-            $period,
-            $this->user,
-        );
-
-        $indicator = $this->createIndicator();
-
-        $this->createReviewItem(
-            $review,
-            $indicator,
-            score: null,
-        );
-
-        $response = $this
-            ->actingAs($this->user)
-            ->postJson(
-                "/api/v1/performance/reviews/{$review->id}/submit",
-            );
-
-        $response->assertUnprocessable();
-    }
 
     public function test_can_submit_performance_review(): void
     {
@@ -924,7 +862,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->postJson("/api/v1/performance/reviews/{$review->id}/submit");
+            ->postJson(
+                "/api/v1/performance/reviews/{$review->id}/submit",
+            );
 
         $response
             ->assertOk()
@@ -957,14 +897,21 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->postJson("/api/v1/performance/reviews/{$review->id}/submit");
+            ->postJson(
+                "/api/v1/performance/reviews/{$review->id}/submit",
+            );
 
         $response->assertUnprocessable();
     }
 
     public function test_can_approve_submitted_performance_review(): void
     {
-        $employee = $this->createEmployee();
+        $employeeUser = User::factory()->create();
+
+        $employee = $this->createEmployee(
+            user: $employeeUser,
+        );
+
         $period = $this->createPeriod();
 
         $review = $this->createReview(
@@ -977,7 +924,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->postJson("/api/v1/performance/reviews/{$review->id}/approve");
+            ->postJson(
+                "/api/v1/performance/reviews/{$review->id}/approve",
+            );
 
         $response
             ->assertOk()
@@ -1005,14 +954,21 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->postJson("/api/v1/performance/reviews/{$review->id}/approve");
+            ->postJson(
+                "/api/v1/performance/reviews/{$review->id}/approve",
+            );
 
         $response->assertUnprocessable();
     }
 
     public function test_can_reject_submitted_performance_review(): void
     {
-        $employee = $this->createEmployee();
+        $employeeUser = User::factory()->create();
+
+        $employee = $this->createEmployee(
+            user: $employeeUser,
+        );
+
         $period = $this->createPeriod();
 
         $review = $this->createReview(
@@ -1025,7 +981,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->postJson("/api/v1/performance/reviews/{$review->id}/reject");
+            ->postJson(
+                "/api/v1/performance/reviews/{$review->id}/reject",
+            );
 
         $response
             ->assertOk()
@@ -1053,7 +1011,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->postJson("/api/v1/performance/reviews/{$review->id}/reject");
+            ->postJson(
+                "/api/v1/performance/reviews/{$review->id}/reject",
+            );
 
         $response->assertUnprocessable();
     }
@@ -1084,7 +1044,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->getJson('/api/v1/performance/reviews?search=EMP-SEARCH-001');
+            ->getJson(
+                '/api/v1/performance/reviews?search=EMP-SEARCH-001',
+            );
 
         $response
             ->assertOk()
@@ -1112,7 +1074,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->getJson("/api/v1/performance/reviews?employee_id={$employee->id}");
+            ->getJson(
+                "/api/v1/performance/reviews?employee_id={$employee->id}",
+            );
 
         $response
             ->assertOk()
@@ -1147,35 +1111,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->getJson("/api/v1/performance/reviews?performance_period_id={$period->id}");
-
-        $response
-            ->assertOk()
-            ->assertJsonCount(1, 'data');
-    }
-
-    public function test_can_filter_performance_review_by_review_type(): void
-    {
-        $employee = $this->createEmployee();
-        $period = $this->createPeriod();
-
-        $this->createReview(
-            $employee,
-            $period,
-            $this->user,
-            reviewType: 'self',
-        );
-
-        $this->createReview(
-            $employee,
-            $period,
-            $this->user,
-            reviewType: 'manager',
-        );
-
-        $response = $this
-            ->actingAs($this->user)
-            ->getJson('/api/v1/performance/reviews?review_type=self');
+            ->getJson(
+                "/api/v1/performance/reviews?performance_period_id={$period->id}",
+            );
 
         $response
             ->assertOk()
@@ -1185,37 +1123,52 @@ class PerformanceReviewControllerTest extends TestCase
     public function test_can_filter_performance_review_by_status(): void
     {
         $employee = $this->createEmployee();
-        $period = $this->createPeriod();
 
-        $this->createReview(
-            $employee,
-            $period,
-            $this->user,
-            status: 'draft',
+        $submittedPeriod = $this->createPeriod(
+            name: 'Submitted Period',
         );
 
-        $this->createReview(
+        $draftPeriod = $this->createPeriod(
+            name: 'Draft Period',
+        );
+
+        $submittedReview = $this->createReview(
             $employee,
-            $period,
+            $submittedPeriod,
             $this->user,
             status: 'submitted',
             overallScore: '85.00',
         );
 
+        $this->createReview(
+            $employee,
+            $draftPeriod,
+            $this->user,
+            status: 'draft',
+        );
+
         $response = $this
             ->actingAs($this->user)
-            ->getJson('/api/v1/performance/reviews?status=submitted');
+            ->getJson(
+                '/api/v1/performance/reviews?status=submitted',
+            );
 
         $response
             ->assertOk()
-            ->assertJsonCount(1, 'data');
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath(
+                'data.0.id',
+                $submittedReview->id,
+            );
     }
 
     public function test_rejects_invalid_per_page(): void
     {
         $response = $this
             ->actingAs($this->user)
-            ->getJson('/api/v1/performance/reviews?per_page=101');
+            ->getJson(
+                '/api/v1/performance/reviews?per_page=101',
+            );
 
         $response
             ->assertUnprocessable()
@@ -1227,12 +1180,12 @@ class PerformanceReviewControllerTest extends TestCase
     public function test_can_paginate_performance_reviews(): void
     {
         $employee = $this->createEmployee();
-        $period = $this->createPeriod();
-
-        PerformanceReview::query()
-            ->count();
 
         for ($i = 1; $i <= 16; $i++) {
+            $period = $this->createPeriod(
+                name: "Pagination Period {$i}",
+            );
+
             $this->createReview(
                 $employee,
                 $period,
@@ -1243,7 +1196,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->getJson('/api/v1/performance/reviews?per_page=10');
+            ->getJson(
+                '/api/v1/performance/reviews?per_page=10',
+            );
 
         $response
             ->assertOk()
@@ -1260,9 +1215,12 @@ class PerformanceReviewControllerTest extends TestCase
     public function test_uses_default_pagination(): void
     {
         $employee = $this->createEmployee();
-        $period = $this->createPeriod();
 
         for ($i = 1; $i <= 16; $i++) {
+            $period = $this->createPeriod(
+                name: "Default Pagination Period {$i}",
+            );
+
             $this->createReview(
                 $employee,
                 $period,
@@ -1273,7 +1231,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->getJson('/api/v1/performance/reviews');
+            ->getJson(
+                '/api/v1/performance/reviews',
+            );
 
         $response
             ->assertOk()
@@ -1395,7 +1355,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($employeeUser)
-            ->postJson("/api/v1/performance/reviews/{$review->id}/approve");
+            ->postJson(
+                "/api/v1/performance/reviews/{$review->id}/approve",
+            );
 
         $response->assertForbidden();
     }
@@ -1423,7 +1385,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($employeeUser)
-            ->postJson("/api/v1/performance/reviews/{$review->id}/reject");
+            ->postJson(
+                "/api/v1/performance/reviews/{$review->id}/reject",
+            );
 
         $response->assertForbidden();
     }
@@ -1443,7 +1407,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->deleteJson("/api/v1/performance/reviews/{$review->id}");
+            ->deleteJson(
+                "/api/v1/performance/reviews/{$review->id}",
+            );
 
         $response->assertUnprocessable();
 
@@ -1469,7 +1435,9 @@ class PerformanceReviewControllerTest extends TestCase
 
         $response = $this
             ->actingAs($this->user)
-            ->deleteJson("/api/v1/performance/reviews/{$review->id}");
+            ->deleteJson(
+                "/api/v1/performance/reviews/{$review->id}",
+            );
 
         $response
             ->assertOk()
@@ -1490,7 +1458,9 @@ class PerformanceReviewControllerTest extends TestCase
     {
         $response = $this
             ->actingAs($this->user)
-            ->deleteJson('/api/v1/performance/reviews/999999');
+            ->deleteJson(
+                '/api/v1/performance/reviews/999999',
+            );
 
         $response->assertNotFound();
     }

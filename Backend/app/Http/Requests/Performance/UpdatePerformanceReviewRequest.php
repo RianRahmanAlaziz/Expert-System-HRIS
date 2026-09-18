@@ -14,11 +14,6 @@ class UpdatePerformanceReviewRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'review_date' => [
-                'nullable',
-                'date',
-            ],
-
             'comments' => [
                 'nullable',
                 'string',
@@ -29,11 +24,7 @@ class UpdatePerformanceReviewRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'review_date.date' =>
-            'Review date harus berupa tanggal yang valid.',
-
-            'comments.string' =>
-            'Komentar harus berupa teks.',
+            'comments.string' => 'Komentar harus berupa teks.',
         ];
     }
 }

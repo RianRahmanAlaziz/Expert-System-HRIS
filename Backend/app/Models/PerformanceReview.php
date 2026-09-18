@@ -25,7 +25,7 @@ class PerformanceReview extends Model
     {
         return [
             'overall_score' => 'decimal:2',
-            'reviewed_at' => 'date',
+            'reviewed_at' => 'datetime',
         ];
     }
 
@@ -36,10 +36,7 @@ class PerformanceReview extends Model
 
     public function period(): BelongsTo
     {
-        return $this->belongsTo(
-            PerformancePeriod::class,
-            'performance_period_id'
-        );
+        return $this->belongsTo(PerformancePeriod::class, 'performance_period_id');
     }
 
     public function reviewer(): BelongsTo
@@ -49,9 +46,6 @@ class PerformanceReview extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(
-            PerformanceReviewItem::class,
-            'performance_review_id',
-        );
+        return $this->hasMany(PerformanceReviewItem::class, 'performance_review_id');
     }
 }

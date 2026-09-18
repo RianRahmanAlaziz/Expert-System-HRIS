@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Career;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateCareerPathRequest extends FormRequest
 {
@@ -23,12 +22,6 @@ class UpdateCareerPathRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => [
-                'sometimes',
-                'string',
-                'max:50',
-                Rule::unique('career_paths', 'code')->ignore($this->career_path),
-            ],
             'name' => [
                 'sometimes',
                 'string',

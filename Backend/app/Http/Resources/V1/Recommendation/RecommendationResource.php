@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\V1\Recommendation;
 
-use App\Http\Resources\V1\EmployeeResource;
+use App\Http\Resources\V1\Employee\EmployeeResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 

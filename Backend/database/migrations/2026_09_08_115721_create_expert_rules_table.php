@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('expert_rules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('knowledge_id')->constrained('knowledges')->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('knowledge_id')->constrained('knowledge')->cascadeOnUpdate()->cascadeOnDelete();
             $table->string('code', 50)->unique();
             $table->string('name', 200);
             $table->text('description')->nullable();

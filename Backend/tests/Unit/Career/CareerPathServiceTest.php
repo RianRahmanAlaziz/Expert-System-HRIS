@@ -24,13 +24,11 @@ class CareerPathServiceTest extends TestCase
     }
 
     private function createCareerPath(
-        ?string $code = null,
         ?string $name = null,
         array $attributes = [],
     ): CareerPath {
         return CareerPath::query()->create(
             array_merge([
-                'code' => $code ?? 'CAREER-' . uniqid(),
                 'name' => $name ?? 'Test Career Path',
                 'description' => 'Test career path.',
                 'status' => 'active',
@@ -42,7 +40,6 @@ class CareerPathServiceTest extends TestCase
     public function test_it_can_create_career_path(): void
     {
         $result = $this->service->create([
-            'code' => 'HR-CAREER',
             'name' => 'HR Career Track',
             'description' => 'Career path for HR.',
             'status' => 'active',
@@ -52,11 +49,6 @@ class CareerPathServiceTest extends TestCase
         $this->assertInstanceOf(
             CareerPath::class,
             $result,
-        );
-
-        $this->assertSame(
-            'HR-CAREER',
-            $result->code,
         );
 
         $this->assertSame(
@@ -82,7 +74,6 @@ class CareerPathServiceTest extends TestCase
             'career_paths',
             [
                 'id' => $result->id,
-                'code' => 'HR-CAREER',
                 'name' => 'HR Career Track',
                 'status' => 'active',
                 'is_active' => true,
@@ -94,7 +85,6 @@ class CareerPathServiceTest extends TestCase
     {
         $careerPath = $this->createCareerPath(
             'HR-CAREER',
-            'HR Career Track',
         );
 
         $result = $this->service->findById(
@@ -109,11 +99,6 @@ class CareerPathServiceTest extends TestCase
         $this->assertSame(
             $careerPath->id,
             $result->id,
-        );
-
-        $this->assertSame(
-            'HR-CAREER',
-            $result->code,
         );
     }
 
@@ -130,12 +115,10 @@ class CareerPathServiceTest extends TestCase
     {
         $this->createCareerPath(
             'HR-CAREER',
-            'HR Career Track',
         );
 
         $this->createCareerPath(
             'IT-CAREER',
-            'IT Career Track',
         );
 
         $result = $this->service->paginate(
@@ -159,12 +142,10 @@ class CareerPathServiceTest extends TestCase
     {
         $this->createCareerPath(
             'HR-CAREER',
-            'HR Career Track',
         );
 
         $this->createCareerPath(
             'IT-CAREER',
-            'IT Career Track',
         );
 
         $result = $this->service->paginate(
@@ -176,18 +157,12 @@ class CareerPathServiceTest extends TestCase
             1,
             $result->total(),
         );
-
-        $this->assertSame(
-            'HR-CAREER',
-            $result->items()[0]->code,
-        );
     }
 
     public function test_it_can_filter_by_status(): void
     {
         $this->createCareerPath(
             'HR-CAREER',
-            'HR Career Track',
             [
                 'status' => 'active',
             ],
@@ -195,7 +170,6 @@ class CareerPathServiceTest extends TestCase
 
         $this->createCareerPath(
             'IT-CAREER',
-            'IT Career Track',
             [
                 'status' => 'inactive',
             ],
@@ -221,7 +195,6 @@ class CareerPathServiceTest extends TestCase
     {
         $this->createCareerPath(
             'HR-CAREER',
-            'HR Career Track',
             [
                 'is_active' => true,
             ],
@@ -229,7 +202,6 @@ class CareerPathServiceTest extends TestCase
 
         $this->createCareerPath(
             'IT-CAREER',
-            'IT Career Track',
             [
                 'is_active' => false,
             ],
@@ -268,7 +240,6 @@ class CareerPathServiceTest extends TestCase
     {
         $careerPath = $this->createCareerPath(
             'HR-CAREER',
-            'HR Career Track',
         );
 
         $result = $this->service->update(

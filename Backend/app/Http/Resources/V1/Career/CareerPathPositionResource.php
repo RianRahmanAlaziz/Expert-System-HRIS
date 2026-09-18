@@ -27,8 +27,6 @@ class CareerPathPositionResource extends JsonResource
                 ],
             ),
             'sequence' => $this->sequence,
-            'is_entry' => $this->is_entry,
-            'is_target' => $this->is_target,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

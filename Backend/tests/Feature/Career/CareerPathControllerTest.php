@@ -47,7 +47,6 @@ class CareerPathControllerTest extends TestCase
     private function createCareerPath(array $overrides = []): CareerPath
     {
         return CareerPath::query()->create(array_merge([
-            'code' => 'CP-' . strtoupper(substr(uniqid(), -6)),
             'name' => 'Engineering Career Path',
             'description' => 'Career path for engineering roles.',
             'status' => 'active',
@@ -78,28 +77,9 @@ class CareerPathControllerTest extends TestCase
             ->getJson('/api/v1/career-paths')
             ->assertOk()
             ->assertJsonPath('data.0.id', $careerPath->id)
-            ->assertJsonPath('data.0.code', $careerPath->code)
             ->assertJsonPath('meta.pagination.total', 1);
     }
 
-    public function test_index_can_search_by_code(): void
-    {
-        $this->createCareerPath([
-            'code' => 'CP-ENGINEERING',
-            'name' => 'Software Engineering',
-        ]);
-
-        $this->createCareerPath([
-            'code' => 'CP-FINANCE',
-            'name' => 'Finance Career Path',
-        ]);
-
-        $this->actingAs($this->user)
-            ->getJson('/api/v1/career-paths?search=ENGINEERING')
-            ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.code', 'CP-ENGINEERING');
-    }
 
     public function test_index_can_search_by_name(): void
     {
@@ -115,10 +95,12 @@ class CareerPathControllerTest extends TestCase
 
     public function test_index_trims_search(): void
     {
-        $this->createCareerPath(['code' => 'CP-TRIM']);
+        $this->createCareerPath([
+            'name' => 'Engineering Career Path',
+        ]);
 
         $this->actingAs($this->user)
-            ->getJson('/api/v1/career-paths?search=%20CP-TRIM%20')
+            ->getJson('/api/v1/career-paths?search=%20Engineering%20%20')
             ->assertOk()
             ->assertJsonCount(1, 'data');
     }
@@ -149,9 +131,9 @@ class CareerPathControllerTest extends TestCase
 
     public function test_index_supports_pagination(): void
     {
-        $this->createCareerPath(['code' => 'CP-001']);
-        $this->createCareerPath(['code' => 'CP-002']);
-        $this->createCareerPath(['code' => 'CP-003']);
+        $this->createCareerPath(['name' => 'Engineering Career Path',]);
+        $this->createCareerPath(['name' => 'Management Career Path',]);
+        $this->createCareerPath(['name' => 'Finance Career Path',]);
 
         $this->actingAs($this->user)
             ->getJson('/api/v1/career-paths?per_page=2')
@@ -184,8 +166,7 @@ class CareerPathControllerTest extends TestCase
         $this->actingAs($this->user)
             ->getJson("/api/v1/career-paths/{$careerPath->id}")
             ->assertOk()
-            ->assertJsonPath('data.id', $careerPath->id)
-            ->assertJsonPath('data.code', $careerPath->code);
+            ->assertJsonPath('data.id', $careerPath->id);
     }
 
     public function test_show_returns_not_found_for_missing_career_path(): void
@@ -201,7 +182,6 @@ class CareerPathControllerTest extends TestCase
 
         $this->actingAs($user)
             ->postJson('/api/v1/career-paths', [
-                'code' => 'CP-NEW',
                 'name' => 'New Career Path',
                 'status' => 'active',
             ])
@@ -211,7 +191,6 @@ class CareerPathControllerTest extends TestCase
     public function test_store_can_create_career_path(): void
     {
         $payload = [
-            'code' => 'CP-NEW',
             'name' => 'New Career Path',
             'description' => 'New description.',
             'status' => 'active',
@@ -221,11 +200,9 @@ class CareerPathControllerTest extends TestCase
         $this->actingAs($this->user)
             ->postJson('/api/v1/career-paths', $payload)
             ->assertCreated()
-            ->assertJsonPath('data.code', 'CP-NEW')
             ->assertJsonPath('data.name', 'New Career Path');
 
         $this->assertDatabaseHas('career_paths', [
-            'code' => 'CP-NEW',
             'name' => 'New Career Path',
         ]);
     }
@@ -236,25 +213,11 @@ class CareerPathControllerTest extends TestCase
             ->postJson('/api/v1/career-paths', [])
             ->assertUnprocessable()
             ->assertJsonValidationErrors([
-                'code',
                 'name',
                 'status',
             ]);
     }
 
-    public function test_store_rejects_duplicate_code(): void
-    {
-        $this->createCareerPath(['code' => 'CP-DUPLICATE']);
-
-        $this->actingAs($this->user)
-            ->postJson('/api/v1/career-paths', [
-                'code' => 'CP-DUPLICATE',
-                'name' => 'Another Career Path',
-                'status' => 'active',
-            ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['code']);
-    }
 
     public function test_update_requires_permission(): void
     {
@@ -291,7 +254,6 @@ class CareerPathControllerTest extends TestCase
     public function test_update_supports_partial_update(): void
     {
         $careerPath = $this->createCareerPath([
-            'code' => 'CP-PARTIAL',
             'name' => 'Original Name',
         ]);
 
@@ -300,33 +262,9 @@ class CareerPathControllerTest extends TestCase
                 'name' => 'Updated Name',
             ])
             ->assertOk()
-            ->assertJsonPath('data.name', 'Updated Name')
-            ->assertJsonPath('data.code', 'CP-PARTIAL');
+            ->assertJsonPath('data.name', 'Updated Name');
     }
 
-    public function test_update_rejects_duplicate_code(): void
-    {
-        $this->createCareerPath(['code' => 'CP-EXISTING']);
-        $careerPath = $this->createCareerPath(['code' => 'CP-OTHER']);
-
-        $this->actingAs($this->user)
-            ->putJson("/api/v1/career-paths/{$careerPath->id}", [
-                'code' => 'CP-EXISTING',
-            ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['code']);
-    }
-
-    public function test_update_allows_same_code(): void
-    {
-        $careerPath = $this->createCareerPath(['code' => 'CP-SAME']);
-
-        $this->actingAs($this->user)
-            ->putJson("/api/v1/career-paths/{$careerPath->id}", [
-                'code' => 'CP-SAME',
-            ])
-            ->assertOk();
-    }
 
     public function test_update_returns_not_found_for_missing_career_path(): void
     {
@@ -382,7 +320,6 @@ class CareerPathControllerTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     'id',
-                    'code',
                     'name',
                     'description',
                     'status',

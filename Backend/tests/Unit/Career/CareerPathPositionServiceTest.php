@@ -28,11 +28,9 @@ class CareerPathPositionServiceTest extends TestCase
     }
 
     private function createCareerPath(
-        ?string $code = null,
         ?string $name = null,
     ): CareerPath {
         return CareerPath::query()->create([
-            'code' => $code ?? 'CAREER-' . uniqid(),
             'name' => $name ?? 'Test Career Path',
             'description' => 'Test career path.',
             'status' => 'active',
@@ -67,8 +65,6 @@ class CareerPathPositionServiceTest extends TestCase
                 'career_path_id' => $careerPath->id,
                 'position_id' => $position->id,
                 'sequence' => 1,
-                'is_entry' => false,
-                'is_target' => false,
             ], $attributes),
         );
     }
@@ -82,8 +78,6 @@ class CareerPathPositionServiceTest extends TestCase
             'career_path_id' => $careerPath->id,
             'position_id' => $position->id,
             'sequence' => 1,
-            'is_entry' => true,
-            'is_target' => false,
         ]);
 
         $this->assertInstanceOf(
@@ -107,14 +101,6 @@ class CareerPathPositionServiceTest extends TestCase
         );
 
         $this->assertTrue(
-            $result->is_entry,
-        );
-
-        $this->assertFalse(
-            $result->is_target,
-        );
-
-        $this->assertTrue(
             $result->relationLoaded('careerPath'),
         );
 
@@ -129,8 +115,6 @@ class CareerPathPositionServiceTest extends TestCase
                 'career_path_id' => $careerPath->id,
                 'position_id' => $position->id,
                 'sequence' => 1,
-                'is_entry' => true,
-                'is_target' => false,
             ],
         );
     }
@@ -164,9 +148,7 @@ class CareerPathPositionServiceTest extends TestCase
 
     public function test_it_throws_exception_when_career_path_position_is_not_found(): void
     {
-        $this->expectException(
-            ModelNotFoundException::class,
-        );
+        $this->expectException(ModelNotFoundException::class);
 
         $this->service->findById(999999);
     }
@@ -176,13 +158,13 @@ class CareerPathPositionServiceTest extends TestCase
         $careerPath = $this->createCareerPath();
 
         $positionOne = $this->createPosition(
-            'POS-001',
-            'Staff',
+            code: 'POS-001',
+            name: 'Staff',
         );
 
         $positionTwo = $this->createPosition(
-            'POS-002',
-            'Senior Staff',
+            code: 'POS-002',
+            name: 'Senior Staff',
         );
 
         $this->createCareerPathPosition(
@@ -234,12 +216,10 @@ class CareerPathPositionServiceTest extends TestCase
         $careerPath = $this->createCareerPath();
 
         $positionOne = $this->createPosition(
-            'POS-001',
             'Staff',
         );
 
         $positionTwo = $this->createPosition(
-            'POS-002',
             'Senior Staff',
         );
 
@@ -282,12 +262,10 @@ class CareerPathPositionServiceTest extends TestCase
     public function test_it_can_filter_by_career_path(): void
     {
         $careerPathOne = $this->createCareerPath(
-            'CAREER-001',
             'HR Career',
         );
 
         $careerPathTwo = $this->createCareerPath(
-            'CAREER-002',
             'IT Career',
         );
 
@@ -318,12 +296,10 @@ class CareerPathPositionServiceTest extends TestCase
     public function test_it_can_filter_by_position(): void
     {
         $positionOne = $this->createPosition(
-            'POS-001',
             'Staff',
         );
 
         $positionTwo = $this->createPosition(
-            'POS-002',
             'Senior Staff',
         );
 
@@ -351,64 +327,6 @@ class CareerPathPositionServiceTest extends TestCase
         );
     }
 
-    public function test_it_can_filter_by_entry_status(): void
-    {
-        $this->createCareerPathPosition(
-            attributes: [
-                'is_entry' => true,
-            ],
-        );
-
-        $this->createCareerPathPosition(
-            attributes: [
-                'is_entry' => false,
-            ],
-        );
-
-        $result = $this->service->paginate(
-            perPage: 15,
-            isEntry: true,
-        );
-
-        $this->assertSame(
-            1,
-            $result->total(),
-        );
-
-        $this->assertTrue(
-            $result->items()[0]->is_entry,
-        );
-    }
-
-    public function test_it_can_filter_by_target_status(): void
-    {
-        $this->createCareerPathPosition(
-            attributes: [
-                'is_target' => true,
-            ],
-        );
-
-        $this->createCareerPathPosition(
-            attributes: [
-                'is_target' => false,
-            ],
-        );
-
-        $result = $this->service->paginate(
-            perPage: 15,
-            isTarget: true,
-        );
-
-        $this->assertSame(
-            1,
-            $result->total(),
-        );
-
-        $this->assertTrue(
-            $result->items()[0]->is_target,
-        );
-    }
-
     public function test_it_rejects_duplicate_position_in_same_career_path(): void
     {
         $careerPath = $this->createCareerPath();
@@ -427,8 +345,6 @@ class CareerPathPositionServiceTest extends TestCase
             'career_path_id' => $careerPath->id,
             'position_id' => $position->id,
             'sequence' => 2,
-            'is_entry' => false,
-            'is_target' => true,
         ]);
     }
 
@@ -437,12 +353,10 @@ class CareerPathPositionServiceTest extends TestCase
         $careerPath = $this->createCareerPath();
 
         $positionOne = $this->createPosition(
-            'POS-001',
             'Staff',
         );
 
         $positionTwo = $this->createPosition(
-            'POS-002',
             'Senior Staff',
         );
 
@@ -456,8 +370,6 @@ class CareerPathPositionServiceTest extends TestCase
             [
                 'position_id' => $positionTwo->id,
                 'sequence' => 2,
-                'is_entry' => false,
-                'is_target' => true,
             ],
         );
 
@@ -469,14 +381,6 @@ class CareerPathPositionServiceTest extends TestCase
         $this->assertSame(
             2,
             $result->sequence,
-        );
-
-        $this->assertFalse(
-            $result->is_entry,
-        );
-
-        $this->assertTrue(
-            $result->is_target,
         );
 
         $this->assertTrue(
@@ -493,8 +397,6 @@ class CareerPathPositionServiceTest extends TestCase
                 'id' => $item->id,
                 'position_id' => $positionTwo->id,
                 'sequence' => 2,
-                'is_entry' => false,
-                'is_target' => true,
             ],
         );
     }
@@ -504,12 +406,10 @@ class CareerPathPositionServiceTest extends TestCase
         $careerPath = $this->createCareerPath();
 
         $positionOne = $this->createPosition(
-            'POS-001',
             'Staff',
         );
 
         $positionTwo = $this->createPosition(
-            'POS-002',
             'Senior Staff',
         );
 
@@ -561,8 +461,6 @@ class CareerPathPositionServiceTest extends TestCase
             'career_path_id' => $careerPath->id,
             'position_id' => $position->id,
             'sequence' => 1,
-            'is_entry' => true,
-            'is_target' => false,
         ]);
 
         $activityLog = ActivityLog::query()
@@ -585,14 +483,6 @@ class CareerPathPositionServiceTest extends TestCase
             1,
             $activityLog->new_values['sequence'],
         );
-
-        $this->assertTrue(
-            $activityLog->new_values['is_entry'],
-        );
-
-        $this->assertFalse(
-            $activityLog->new_values['is_target'],
-        );
     }
 
     public function test_it_logs_activity_when_updating_career_path_position(): void
@@ -600,12 +490,10 @@ class CareerPathPositionServiceTest extends TestCase
         $careerPath = $this->createCareerPath();
 
         $positionOne = $this->createPosition(
-            'POS-001',
             'Staff',
         );
 
         $positionTwo = $this->createPosition(
-            'POS-002',
             'Senior Staff',
         );
 
@@ -619,8 +507,6 @@ class CareerPathPositionServiceTest extends TestCase
             [
                 'position_id' => $positionTwo->id,
                 'sequence' => 2,
-                'is_entry' => false,
-                'is_target' => true,
             ],
         );
 
@@ -654,14 +540,6 @@ class CareerPathPositionServiceTest extends TestCase
             2,
             $activityLog->new_values['sequence'],
         );
-
-        $this->assertFalse(
-            $activityLog->old_values['is_target'],
-        );
-
-        $this->assertTrue(
-            $activityLog->new_values['is_target'],
-        );
     }
 
     public function test_it_logs_activity_when_deleting_career_path_position(): void
@@ -674,8 +552,6 @@ class CareerPathPositionServiceTest extends TestCase
             position: $position,
             attributes: [
                 'sequence' => 2,
-                'is_entry' => true,
-                'is_target' => true,
             ],
         );
 
@@ -700,14 +576,6 @@ class CareerPathPositionServiceTest extends TestCase
         $this->assertSame(
             2,
             $activityLog->old_values['sequence'],
-        );
-
-        $this->assertTrue(
-            $activityLog->old_values['is_entry'],
-        );
-
-        $this->assertTrue(
-            $activityLog->old_values['is_target'],
         );
     }
 }
