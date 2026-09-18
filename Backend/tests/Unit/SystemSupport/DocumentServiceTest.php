@@ -259,7 +259,7 @@ class DocumentServiceTest extends TestCase
         $filePath = $document->file_path;
         $documentId = $document->id;
 
-        Storage::disk('public')->assertMissing($filePath);
+        Storage::disk('public')->assertExists($filePath);
 
         $this->service->delete($document);
 
