@@ -155,7 +155,19 @@ class HrDashboardServiceTest extends TestCase
     {
         $department = $this->createDepartment();
         $position = $this->createPosition();
-        $employee = $this->createEmployee($department, $position);
+
+        $employeeOne = $this->createEmployee(
+            $department,
+            $position,
+        );
+
+        $employeeTwo = $this->createEmployee(
+            $department,
+            $position,
+            [
+                'employee_number' => 'EMP-002',
+            ],
+        );
 
         $reviewer = User::factory()->create();
 
@@ -167,7 +179,7 @@ class HrDashboardServiceTest extends TestCase
         ]);
 
         PerformanceReview::query()->create([
-            'employee_id' => $employee->id,
+            'employee_id' => $employeeOne->id,
             'performance_period_id' => $performancePeriod->id,
             'reviewer_id' => $reviewer->id,
             'overall_score' => 80,
@@ -175,7 +187,7 @@ class HrDashboardServiceTest extends TestCase
         ]);
 
         PerformanceReview::query()->create([
-            'employee_id' => $employee->id,
+            'employee_id' => $employeeTwo->id,
             'performance_period_id' => $performancePeriod->id,
             'reviewer_id' => $reviewer->id,
             'overall_score' => 90,
@@ -184,7 +196,10 @@ class HrDashboardServiceTest extends TestCase
 
         $result = $this->service->getSummary();
 
-        $this->assertSame(85.0, $result['performance']['average_score']);
+        $this->assertSame(
+            85.0,
+            $result['performance']['average_score'],
+        );
     }
 
     public function test_it_counts_training_and_promotion_recommendations(): void
