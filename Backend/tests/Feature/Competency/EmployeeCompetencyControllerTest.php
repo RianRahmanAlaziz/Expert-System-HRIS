@@ -652,7 +652,22 @@ class EmployeeCompetencyControllerTest extends TestCase
 
         $this->assertDatabaseHas(
             'employee_competencies',
-            $payload,
+            [
+                'employee_id' => $employee->id,
+                'competency_id' => $competency->id,
+                'competency_level_id' => $level->id,
+                'score' => 85.50,
+                'assessed_by' => $this->user->id,
+                'notes' => 'Assessment test',
+            ],
+        );
+
+        $this->assertDatabaseHas(
+            'employee_competencies',
+            [
+                'id' => $response->json('data.id'),
+                'assessed_at' => '2026-09-09 00:00:00',
+            ],
         );
     }
 
@@ -872,7 +887,7 @@ class EmployeeCompetencyControllerTest extends TestCase
                 'data.competency_level_id',
                 $newLevel->id,
             )
-            ->assertJsonPath('data.score', 95);
+            ->assertJsonPath('data.score', '95.00');
     }
 
     public function test_can_partially_update_employee_competency(): void
@@ -898,7 +913,7 @@ class EmployeeCompetencyControllerTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath('data.notes', 'Updated notes')
-            ->assertJsonPath('data.score', 70);
+            ->assertJsonPath('data.score', '70.00');
     }
 
     public function test_update_rejects_duplicate_employee_competency(): void
