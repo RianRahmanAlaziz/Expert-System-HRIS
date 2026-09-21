@@ -110,14 +110,12 @@ class PerformanceReportControllerTest extends TestCase
         Employee $employee,
         PerformancePeriod $period,
         string $status = 'approved',
-        string $reviewType = 'manager',
         string $overallScore = '85.00',
     ): PerformanceReview {
         return PerformanceReview::query()->create([
             'employee_id' => $employee->id,
             'performance_period_id' => $period->id,
             'reviewer_id' => $this->user->id,
-            'review_type' => $reviewType,
             'status' => $status,
             'overall_score' => $overallScore,
             'review_date' => '2026-03-15',
@@ -187,13 +185,6 @@ class PerformanceReportControllerTest extends TestCase
                             'average_score',
                         ],
                     ],
-                    'by_review_type' => [
-                        '*' => [
-                            'review_type',
-                            'total_reviews',
-                            'average_score',
-                        ],
-                    ],
                     'by_period' => [
                         '*' => [
                             'period_id',
@@ -244,14 +235,6 @@ class PerformanceReportControllerTest extends TestCase
                 1,
             )
             ->assertJsonPath(
-                'data.by_review_type.0.review_type',
-                'manager',
-            )
-            ->assertJsonPath(
-                'data.by_review_type.0.total_reviews',
-                1,
-            )
-            ->assertJsonPath(
                 'data.by_period.0.period_id',
                 $period->id,
             )
@@ -263,29 +246,33 @@ class PerformanceReportControllerTest extends TestCase
 
     public function test_only_approved_reviews_are_included(): void
     {
-        $employee = $this->createEmployee();
+        $employee1 = $this->createEmployee();
+        $employee2 = $this->createEmployee();
+        $employee3 = $this->createEmployee();
+        $employee4 = $this->createEmployee();
+
         $period = $this->createPeriod();
 
         $approvedReview = $this->createReview(
-            employee: $employee,
+            employee: $employee1,
             period: $period,
             status: 'approved',
         );
 
         $this->createReview(
-            employee: $employee,
+            employee: $employee2,
             period: $period,
             status: 'draft',
         );
 
         $this->createReview(
-            employee: $employee,
+            employee: $employee3,
             period: $period,
             status: 'submitted',
         );
 
         $this->createReview(
-            employee: $employee,
+            employee: $employee4,
             period: $period,
             status: 'rejected',
         );
@@ -301,10 +288,6 @@ class PerformanceReportControllerTest extends TestCase
             )
             ->assertJsonPath(
                 'data.summary.total_employees',
-                1,
-            )
-            ->assertJsonPath(
-                'data.by_review_type.0.total_reviews',
                 1,
             );
 
@@ -354,7 +337,6 @@ class PerformanceReportControllerTest extends TestCase
                 null,
             )
             ->assertJsonCount(0, 'data.by_department')
-            ->assertJsonCount(0, 'data.by_review_type')
             ->assertJsonCount(0, 'data.by_period');
     }
 
@@ -496,49 +478,6 @@ class PerformanceReportControllerTest extends TestCase
             );
     }
 
-    public function test_can_filter_by_review_type(): void
-    {
-        $employee1 = $this->createEmployee();
-        $employee2 = $this->createEmployee();
-        $period = $this->createPeriod();
-
-        $managerReview = $this->createReview(
-            employee: $employee1,
-            period: $period,
-            reviewType: 'manager',
-        );
-
-        $this->createReview(
-            employee: $employee2,
-            period: $period,
-            reviewType: 'self',
-        );
-
-        $response = $this->actingAs($this->user)
-            ->getJson(
-                '/api/v1/performance/reports?review_type=manager',
-            );
-
-        $response
-            ->assertOk()
-            ->assertJsonPath(
-                'data.summary.total_reviews',
-                1,
-            )
-            ->assertJsonPath(
-                'data.by_review_type.0.review_type',
-                'manager',
-            )
-            ->assertJsonPath(
-                'data.by_review_type.0.total_reviews',
-                1,
-            );
-
-        $this->assertSame(
-            'manager',
-            $managerReview->review_type,
-        );
-    }
 
     public function test_can_combine_filters(): void
     {
@@ -571,13 +510,11 @@ class PerformanceReportControllerTest extends TestCase
         $this->createReview(
             employee: $employee1,
             period: $period1,
-            reviewType: 'manager',
         );
 
         $this->createReview(
             employee: $employee2,
             period: $period2,
-            reviewType: 'self',
         );
 
         $response = $this->actingAs($this->user)
@@ -585,8 +522,7 @@ class PerformanceReportControllerTest extends TestCase
                 "/api/v1/performance/reports"
                     . "?period_id={$period1->id}"
                     . "&employee_id={$employee1->id}"
-                    . "&department_id={$department1->id}"
-                    . '&review_type=manager',
+                    . "&department_id={$department1->id}",
             );
 
         $response
@@ -602,10 +538,6 @@ class PerformanceReportControllerTest extends TestCase
             ->assertJsonPath(
                 'data.by_department.0.department_id',
                 $department1->id,
-            )
-            ->assertJsonPath(
-                'data.by_review_type.0.review_type',
-                'manager',
             )
             ->assertJsonPath(
                 'data.by_period.0.period_id',
@@ -731,57 +663,6 @@ class PerformanceReportControllerTest extends TestCase
         $this->assertSame(70, $it['average_score']);
     }
 
-    public function test_groups_reviews_by_review_type(): void
-    {
-        $employee1 = $this->createEmployee();
-        $employee2 = $this->createEmployee();
-        $employee3 = $this->createEmployee();
-
-        $period = $this->createPeriod();
-
-        $this->createReview(
-            employee: $employee1,
-            period: $period,
-            reviewType: 'manager',
-            overallScore: '80.00',
-        );
-
-        $this->createReview(
-            employee: $employee2,
-            period: $period,
-            reviewType: 'manager',
-            overallScore: '90.00',
-        );
-
-        $this->createReview(
-            employee: $employee3,
-            period: $period,
-            reviewType: 'self',
-            overallScore: '70.00',
-        );
-
-        $response = $this->actingAs($this->user)
-            ->getJson('/api/v1/performance/reports');
-
-        $response->assertOk();
-
-        $types = $response->json('data.by_review_type');
-
-        $this->assertCount(2, $types);
-
-        $manager = collect($types)
-            ->firstWhere('review_type', 'manager');
-
-        $self = collect($types)
-            ->firstWhere('review_type', 'self');
-
-        $this->assertSame(2, $manager['total_reviews']);
-        $this->assertSame(85, $manager['average_score']);
-
-        $this->assertSame(1, $self['total_reviews']);
-        $this->assertSame(70, $self['average_score']);
-    }
-
     public function test_groups_reviews_by_period(): void
     {
         $employee1 = $this->createEmployee();
@@ -870,20 +751,6 @@ class PerformanceReportControllerTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors([
                 'department_id',
-            ]);
-    }
-
-    public function test_validates_review_type(): void
-    {
-        $response = $this->actingAs($this->user)
-            ->getJson(
-                '/api/v1/performance/reports?review_type=invalid',
-            );
-
-        $response
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors([
-                'review_type',
             ]);
     }
 }

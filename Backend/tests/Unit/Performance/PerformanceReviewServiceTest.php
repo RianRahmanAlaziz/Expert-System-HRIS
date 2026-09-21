@@ -388,9 +388,9 @@ class PerformanceReviewServiceTest extends TestCase
         $this->assertTrue($result->relationLoaded('employee'));
         $this->assertTrue($result->relationLoaded('period'));
         $this->assertTrue($result->relationLoaded('reviewer'));
-        $this->assertTrue($result->relationLoaded('items'));
+        $this->assertTrue($result->relationLoaded('performanceReviewItems'));
 
-        $this->assertCount(1, $result->items);
+        $this->assertCount(1, $result->performanceReviewItems);
     }
 
     public function test_it_throws_exception_when_performance_review_is_not_found(): void

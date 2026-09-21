@@ -32,32 +32,34 @@ class PerformanceIndicatorServiceTest extends TestCase
     }
 
     private function createIndicator(
+        string $code = 'KPI-COM-001',
         string $name = 'Communication',
         ?string $description = 'Communication performance indicator.',
-        ?string $category = 'Behavioral',
         ?float $target = 80,
         float $weight = 20,
-        string $measurementType = 'score',
-        bool $isActive = true,
+        ?string $unit = 'score',
+        string $status = 'active',
     ): PerformanceIndicator {
         return PerformanceIndicator::query()->create([
+            'code' => $code,
             'name' => $name,
             'description' => $description,
-            'category' => $category,
             'target' => $target,
             'weight' => $weight,
-            'measurement_type' => $measurementType,
-            'is_active' => $isActive,
+            'unit' => $unit,
+            'status' => $status,
         ]);
     }
 
     public function test_it_can_get_all_performance_indicators(): void
     {
         $this->createIndicator(
+            code: 'KPI-COM-001',
             name: 'Communication',
         );
 
         $this->createIndicator(
+            code: 'KPI-LEAD-001',
             name: 'Leadership',
         );
 
@@ -69,29 +71,32 @@ class PerformanceIndicatorServiceTest extends TestCase
     public function test_it_can_get_only_active_indicators(): void
     {
         $this->createIndicator(
+            code: 'KPI-COM-001',
             name: 'Communication',
-            isActive: true,
+            status: 'active',
         );
 
         $this->createIndicator(
+            code: 'KPI-LEAD-001',
             name: 'Leadership',
-            isActive: false,
+            status: 'inactive',
         );
 
         $result = $this->performanceIndicatorService->getActive();
 
         $this->assertCount(
             1,
-            $result
+            $result,
         );
 
-        $this->assertTrue(
-            $result->first()->is_active
+        $this->assertSame(
+            'active',
+            $result->first()->status,
         );
 
         $this->assertEquals(
             'Communication',
-            $result->first()->name
+            $result->first()->name,
         );
     }
 
@@ -195,10 +200,9 @@ class PerformanceIndicatorServiceTest extends TestCase
             'employee_id' => $employee->id,
             'performance_period_id' => $period->id,
             'reviewer_id' => $user->id,
-            'review_type' => 'annual',
             'status' => 'draft',
             'overall_score' => 80,
-            'review_date' => '2026-12-01',
+            'reviewed_at' => '2026-12-01 00:00:00',
             'comments' => 'Test review.',
         ]);
 
@@ -206,7 +210,7 @@ class PerformanceIndicatorServiceTest extends TestCase
             'performance_review_id' => $review->id,
             'performance_indicator_id' => $indicator->id,
             'score' => 85,
-            'comment' => 'Good performance.',
+            'comments' => 'Good performance.',
         ]);
 
         $result = $this->performanceIndicatorService->getById(
@@ -222,13 +226,13 @@ class PerformanceIndicatorServiceTest extends TestCase
     public function test_it_can_create_performance_indicator(): void
     {
         $indicator = $this->performanceIndicatorService->create([
+            'code' => 'KPI-LEAD-001',
             'name' => 'Leadership',
             'description' => 'Leadership performance indicator.',
-            'category' => 'Behavioral',
             'target' => 85,
             'weight' => 25,
-            'measurement_type' => 'score',
-            'is_active' => true,
+            'unit' => 'score',
+            'status' => 'active',
         ]);
 
         $this->assertInstanceOf(
@@ -238,70 +242,70 @@ class PerformanceIndicatorServiceTest extends TestCase
 
         $this->assertEquals(
             'Leadership',
-            $indicator->name
+            $indicator->name,
         );
 
         $this->assertEquals(
-            'Behavioral',
-            $indicator->category
+            'KPI-LEAD-001',
+            $indicator->code,
         );
 
         $this->assertEquals(
-            85.00,
-            (float) $indicator->target
+            'score',
+            $indicator->unit,
         );
 
         $this->assertEquals(
-            25.00,
-            (float) $indicator->weight
-        );
-
-        $this->assertTrue(
-            $indicator->is_active
+            'active',
+            $indicator->status,
         );
 
         $this->assertDatabaseHas('performance_indicators', [
             'id' => $indicator->id,
+            'code' => 'KPI-LEAD-001',
             'name' => 'Leadership',
-            'category' => 'Behavioral',
-            'is_active' => true,
+            'status' => 'active',
         ]);
     }
 
     public function test_it_can_create_indicator_without_optional_fields(): void
     {
         $indicator = $this->performanceIndicatorService->create([
+            'code' => 'KPI-ATT-001',
             'name' => 'Attendance',
+            'status' => 'active',
         ]);
 
         $this->assertInstanceOf(
             PerformanceIndicator::class,
-            $indicator
+            $indicator,
+        );
+
+        $this->assertEquals(
+            'KPI-ATT-001',
+            $indicator->code,
         );
 
         $this->assertNull(
-            $indicator->description
+            $indicator->description,
         );
 
         $this->assertNull(
-            $indicator->category
-        );
-
-        $this->assertNull(
-            $indicator->target
+            $indicator->target,
         );
 
         $this->assertEquals(
             0.00,
-            (float) $indicator->weight
+            (float) $indicator->weight,
         );
 
         $this->assertNull(
-            $indicator->measurement_type
+            $indicator->unit,
         );
 
-        $this->assertNull(
-            $indicator->is_active
+        $this->assertEquals(
+            'active',
+            $indicator->status,
         );
     }
 
@@ -314,47 +318,47 @@ class PerformanceIndicatorServiceTest extends TestCase
             [
                 'name' => 'Effective Communication',
                 'description' => 'Updated indicator.',
-                'category' => 'Behavioral',
                 'target' => 90,
                 'weight' => 30,
-                'measurement_type' => 'percentage',
-                'is_active' => false,
-            ]
+                'unit' => 'percentage',
+                'status' => 'inactive',
+            ],
         );
 
         $this->assertEquals(
             'Effective Communication',
-            $result->name
+            $result->name,
         );
 
         $this->assertEquals(
             'Updated indicator.',
-            $result->description
+            $result->description,
         );
 
         $this->assertEquals(
             90.00,
-            (float) $result->target
+            (float) $result->target,
         );
 
         $this->assertEquals(
             30.00,
-            (float) $result->weight
+            (float) $result->weight,
         );
 
         $this->assertEquals(
             'percentage',
-            $result->measurement_type
+            $result->unit,
         );
 
-        $this->assertFalse(
-            $result->is_active
+        $this->assertEquals(
+            'inactive',
+            $result->status,
         );
 
         $this->assertDatabaseHas('performance_indicators', [
             'id' => $indicator->id,
             'name' => 'Effective Communication',
-            'is_active' => false,
+            'status' => 'inactive',
         ]);
     }
 
@@ -374,13 +378,13 @@ class PerformanceIndicatorServiceTest extends TestCase
     public function test_it_logs_activity_when_creating_performance_indicator(): void
     {
         $indicator = $this->performanceIndicatorService->create([
+            'code' => 'KPI-LEAD-001',
             'name' => 'Leadership',
             'description' => 'Leadership performance indicator.',
-            'category' => 'Behavioral',
             'target' => 85,
             'weight' => 25,
-            'measurement_type' => 'score',
-            'is_active' => true,
+            'unit' => 'score',
+            'status' => 'active',
         ]);
 
         $log = ActivityLog::query()
@@ -401,17 +405,13 @@ class PerformanceIndicatorServiceTest extends TestCase
         );
 
         $this->assertSame(
-            'Behavioral',
-            $log->new_values['category'],
+            'score',
+            $log->new_values['unit'],
         );
 
         $this->assertSame(
-            'score',
-            $log->new_values['measurement_type'],
-        );
-
-        $this->assertTrue(
-            $log->new_values['is_active'],
+            'active',
+            $log->new_values['status'],
         );
     }
 
@@ -424,11 +424,10 @@ class PerformanceIndicatorServiceTest extends TestCase
             [
                 'name' => 'Effective Communication',
                 'description' => 'Updated indicator.',
-                'category' => 'Behavioral',
                 'target' => 90,
                 'weight' => 30,
-                'measurement_type' => 'percentage',
-                'is_active' => false,
+                'unit' => 'percentage',
+                'status' => 'inactive',
             ],
         );
 
@@ -469,8 +468,9 @@ class PerformanceIndicatorServiceTest extends TestCase
             (string) $log->new_values['weight'],
         );
 
-        $this->assertFalse(
-            $log->new_values['is_active'],
+        $this->assertEquals(
+            'inactive',
+            $log->new_values['status'],
         );
     }
 
@@ -495,13 +495,13 @@ class PerformanceIndicatorServiceTest extends TestCase
         );
 
         $this->assertSame(
-            'Behavioral',
-            $log->old_values['category'],
+            'score',
+            $log->old_values['unit'],
         );
 
         $this->assertSame(
-            'score',
-            $log->old_values['measurement_type'],
+            'active',
+            $log->old_values['status'],
         );
     }
 }

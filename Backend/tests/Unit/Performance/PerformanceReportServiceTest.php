@@ -123,17 +123,15 @@ class PerformanceReportServiceTest extends TestCase
         PerformancePeriod $period,
         User $reviewer,
         float $score = 80,
-        string $status = 'approved',
-        string $reviewType = 'manager'
+        string $status = 'approved'
     ): PerformanceReview {
         return PerformanceReview::create([
             'employee_id' => $employee->id,
             'performance_period_id' => $period->id,
             'reviewer_id' => $reviewer->id,
-            'review_type' => $reviewType,
             'status' => $status,
             'overall_score' => $score,
-            'review_date' => now()->toDateString(),
+            'reviewed_at' => now(),
             'comments' => 'Test performance review',
         ]);
     }
@@ -162,7 +160,6 @@ class PerformanceReportServiceTest extends TestCase
 
         $this->assertArrayHasKey('summary', $result);
         $this->assertArrayHasKey('by_department', $result);
-        $this->assertArrayHasKey('by_review_type', $result);
         $this->assertArrayHasKey('by_period', $result);
     }
 
@@ -175,12 +172,15 @@ class PerformanceReportServiceTest extends TestCase
             'Human Resources'
         );
 
-        $employee = $this->createEmployee($department);
+        $employee1 = $this->createEmployee($department);
+        $employee2 = $this->createEmployee($department);
+        $employee3 = $this->createEmployee($department);
+        $employee4 = $this->createEmployee($department);
 
         $period = $this->createPeriod();
 
         $this->createReview(
-            $employee,
+            $employee1,
             $period,
             $reviewer,
             90,
@@ -188,7 +188,7 @@ class PerformanceReportServiceTest extends TestCase
         );
 
         $this->createReview(
-            $employee,
+            $employee2,
             $period,
             $reviewer,
             80,
@@ -196,7 +196,7 @@ class PerformanceReportServiceTest extends TestCase
         );
 
         $this->createReview(
-            $employee,
+            $employee3,
             $period,
             $reviewer,
             70,
@@ -204,7 +204,7 @@ class PerformanceReportServiceTest extends TestCase
         );
 
         $this->createReview(
-            $employee,
+            $employee4,
             $period,
             $reviewer,
             60,
@@ -490,53 +490,6 @@ class PerformanceReportServiceTest extends TestCase
         );
     }
 
-    public function test_can_filter_by_review_type(): void
-    {
-        $reviewer = $this->createUser('admin');
-
-        $department = $this->createDepartment(
-            'HR',
-            'Human Resources'
-        );
-
-        $employee1 = $this->createEmployee($department);
-        $employee2 = $this->createEmployee($department);
-
-        $period = $this->createPeriod();
-
-        $this->createReview(
-            $employee1,
-            $period,
-            $reviewer,
-            80,
-            'approved',
-            'manager'
-        );
-
-        $this->createReview(
-            $employee2,
-            $period,
-            $reviewer,
-            90,
-            'approved',
-            'self'
-        );
-
-        $result = $this->service->generate([
-            'review_type' => 'manager',
-        ]);
-
-        $this->assertEquals(
-            1,
-            $result['summary']['total_reviews']
-        );
-
-        $this->assertEquals(
-            80,
-            (float) $result['summary']['average_score']
-        );
-    }
-
     public function test_groups_reviews_by_department(): void
     {
         $reviewer = $this->createUser('admin');
@@ -596,63 +549,6 @@ class PerformanceReportServiceTest extends TestCase
         $this->assertEquals(
             80,
             (float) $hrReport['average_score']
-        );
-    }
-
-    public function test_groups_reviews_by_review_type(): void
-    {
-        $reviewer = $this->createUser('admin');
-
-        $department = $this->createDepartment(
-            'HR',
-            'Human Resources'
-        );
-
-        $employee1 = $this->createEmployee($department);
-        $employee2 = $this->createEmployee($department);
-
-        $period = $this->createPeriod();
-
-        $this->createReview(
-            $employee1,
-            $period,
-            $reviewer,
-            80,
-            'approved',
-            'manager'
-        );
-
-        $this->createReview(
-            $employee2,
-            $period,
-            $reviewer,
-            90,
-            'approved',
-            'self'
-        );
-
-        $result = $this->service->generate([]);
-
-        $this->assertCount(
-            2,
-            $result['by_review_type']
-        );
-
-        $managerReport = collect(
-            $result['by_review_type']
-        )->firstWhere(
-            'review_type',
-            'manager'
-        );
-
-        $this->assertNotNull($managerReport);
-        $this->assertEquals(
-            1,
-            $managerReport['total_reviews']
-        );
-        $this->assertEquals(
-            80,
-            (float) $managerReport['average_score']
         );
     }
 

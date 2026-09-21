@@ -32,7 +32,7 @@ class PerformanceReviewService
                 'employee',
                 'period',
                 'reviewer',
-                'items.indicator',
+                'performanceReviewItems.indicator',
             ])
             ->when(
                 $search !== '',
@@ -111,7 +111,7 @@ class PerformanceReviewService
                 'employee',
                 'period',
                 'reviewer',
-                'items.indicator',
+                'performanceReviewItems.indicator',
             ])
             ->findOrFail($id);
     }
@@ -183,7 +183,7 @@ class PerformanceReviewService
                 'employee',
                 'period',
                 'reviewer',
-                'items.indicator',
+                'performanceReviewItems.indicator',
             ]);
         });
     }
@@ -238,7 +238,7 @@ class PerformanceReviewService
             'employee',
             'period',
             'reviewer',
-            'items.indicator',
+            'performanceReviewItems.indicator',
         ]);
     }
 
@@ -308,13 +308,13 @@ class PerformanceReviewService
 
         $this->authorizeUserAccess($user, $review);
 
-        $review->loadMissing('items.indicator');
+        $review->loadMissing('performanceReviewItems.indicator');
 
-        if ($review->items->isEmpty()) {
+        if ($review->performanceReviewItems->isEmpty()) {
             throw new InvalidArgumentException('Performance review belum memiliki indikator.');
         }
 
-        foreach ($review->items as $item) {
+        foreach ($review->performanceReviewItems as $item) {
             if ($item->score === null) {
                 throw new InvalidArgumentException('Semua indikator harus memiliki score sebelum review disubmit.');
             }
@@ -349,7 +349,7 @@ class PerformanceReviewService
             'employee',
             'period',
             'reviewer',
-            'items.indicator',
+            'performanceReviewItems.indicator',
         ]);
     }
 
@@ -392,7 +392,7 @@ class PerformanceReviewService
             'employee',
             'period',
             'reviewer',
-            'items.indicator',
+            'performanceReviewItems.indicator',
         ]);
     }
 
@@ -436,7 +436,7 @@ class PerformanceReviewService
             'employee',
             'period',
             'reviewer',
-            'items.indicator',
+            'performanceReviewItems.indicator',
         ]);
     }
 

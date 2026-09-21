@@ -140,22 +140,24 @@ class PerformanceReviewItemControllerTest extends TestCase
     private function createIndicator(
         ?string $name = null,
         bool $isActive = true,
+        array $overrides = [],
     ): PerformanceIndicator {
-        return PerformanceIndicator::query()->create([
-            'name' => $name
-                ?? 'Test Indicator ' . fake()->unique()->numerify('####'),
+        return PerformanceIndicator::query()->create(array_merge([
+            'code' => 'IND-' . fake()->unique()->numberBetween(1000, 9999),
+            'name' => $name ?? 'Test Indicator ' . fake()->unique()->numberBetween(1, 9999),
             'description' => 'Performance indicator for testing.',
-            'category' => 'quality',
+            'target' => 100,
             'weight' => 100,
-            'is_active' => $isActive,
-        ]);
+            'unit' => 'score',
+            'status' => $isActive ? 'active' : 'inactive',
+        ], $overrides));
     }
 
     private function createItem(
         ?PerformanceReview $review = null,
         ?PerformanceIndicator $indicator = null,
         ?float $score = 85,
-        ?string $comment = 'Good performance.',
+        ?string $comments = 'Good performance.',
     ): PerformanceReviewItem {
         $review ??= $this->createReview();
         $indicator ??= $this->createIndicator();
@@ -164,7 +166,7 @@ class PerformanceReviewItemControllerTest extends TestCase
             'performance_review_id' => $review->id,
             'performance_indicator_id' => $indicator->id,
             'score' => $score,
-            'comment' => $comment,
+            'comments' => $comments,
         ]);
     }
 
@@ -180,8 +182,7 @@ class PerformanceReviewItemControllerTest extends TestCase
         }
 
         $role = Role::create([
-            'name' => $roleName
-                ?? 'tester-' . fake()->unique()->numerify('####'),
+            'name' => $roleName ?? 'tester-' . fake()->unique()->numerify('####'),
             'guard_name' => 'web',
         ]);
 
@@ -432,7 +433,7 @@ class PerformanceReviewItemControllerTest extends TestCase
                 [
                     'performance_indicator_id' => $indicator->id,
                     'score' => 85,
-                    'comment' => 'Good performance.',
+                    'comments' => 'Good performance.',
                 ],
             );
 
@@ -451,7 +452,7 @@ class PerformanceReviewItemControllerTest extends TestCase
                 '85.00',
             )
             ->assertJsonPath(
-                'data.comment',
+                'data.comments',
                 'Good performance.',
             );
 
@@ -475,7 +476,7 @@ class PerformanceReviewItemControllerTest extends TestCase
                 "/api/v1/performance/reviews/{$review->id}/items",
                 [
                     'performance_indicator_id' => $indicator->id,
-                    'comment' => 'Score will be added later.',
+                    'comments' => 'Score will be added later.',
                 ],
             );
 
@@ -590,12 +591,12 @@ class PerformanceReviewItemControllerTest extends TestCase
                 [
                     'performance_indicator_id' => $indicator->id,
                     'score' => 80,
-                    'comment' => 12345,
+                    'comments' => 12345,
                 ],
             )
             ->assertUnprocessable()
             ->assertJsonValidationErrors([
-                'comment',
+                'comments',
             ]);
     }
 
@@ -710,7 +711,7 @@ class PerformanceReviewItemControllerTest extends TestCase
         $item = $this->createItem(
             review: $review,
             score: 70,
-            comment: 'Old comment.',
+            comments: 'Old comments.',
         );
 
         $response = $this->actingAs($this->user)
@@ -718,7 +719,7 @@ class PerformanceReviewItemControllerTest extends TestCase
                 "/api/v1/performance/reviews/{$review->id}/items/{$item->id}",
                 [
                     'score' => 95,
-                    'comment' => 'Updated comment.',
+                    'comments' => 'Updated comments.',
                 ],
             );
 
@@ -729,8 +730,8 @@ class PerformanceReviewItemControllerTest extends TestCase
                 '95.00',
             )
             ->assertJsonPath(
-                'data.comment',
-                'Updated comment.',
+                'data.comments',
+                'Updated comments.',
             );
 
         $this->assertDatabaseHas(
@@ -738,7 +739,7 @@ class PerformanceReviewItemControllerTest extends TestCase
             [
                 'id' => $item->id,
                 'score' => 95,
-                'comment' => 'Updated comment.',
+                'comments' => 'Updated comments.',
             ],
         );
     }
@@ -749,7 +750,7 @@ class PerformanceReviewItemControllerTest extends TestCase
         $item = $this->createItem(
             review: $review,
             score: 70,
-            comment: 'Old comment.',
+            comments: 'Old comments.',
         );
 
         $response = $this->actingAs($this->user)
@@ -767,8 +768,8 @@ class PerformanceReviewItemControllerTest extends TestCase
                 '88.00',
             )
             ->assertJsonPath(
-                'data.comment',
-                'Old comment.',
+                'data.comments',
+                'Old comments.',
             );
     }
 

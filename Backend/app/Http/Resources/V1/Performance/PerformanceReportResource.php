@@ -17,7 +17,6 @@ class PerformanceReportResource extends JsonResource
         return [
             'summary' => $this['summary'],
             'by_department' => $this['by_department'],
-            'by_review_type' => $this['by_review_type'],
             'by_period' => $this['by_period'],
         ];
     }

@@ -31,10 +31,9 @@ class PerformanceHistoryResource extends JsonResource
                 'id' => $this->reviewer?->id,
             ],
 
-            'review_type' => $this->review_type,
             'status' => $this->status,
             'overall_score' => $this->overall_score,
-            'review_date' => $this->review_date?->format('Y-m-d'),
+            'reviewed_at' => $this->reviewed_at?->toISOString(),
             'comments' => $this->comments,
         ];
     }

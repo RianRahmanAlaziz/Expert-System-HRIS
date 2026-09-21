@@ -45,22 +45,23 @@ class PerformanceIndicatorControllerTest extends TestCase
     }
 
     private function createIndicator(
+        ?string $code = null,
         ?string $name = null,
         ?string $description = null,
-        ?string $category = null,
-        ?float $target = 100,
         float $weight = 20,
-        string $measurementType = 'score',
-        bool $isActive = true,
+        ?float $target = 100,
+        ?string $unit = null,
+        string $status = 'active',
     ): PerformanceIndicator {
         return PerformanceIndicator::query()->create([
+            'code' => $code ?? fake()->unique()->numerify('PI-####'),
             'name' => $name ?? fake()->unique()->sentence(3),
-            'description' => $description ?? 'Performance indicator for testing.',
-            'category' => $category ?? 'Quality',
-            'target' => $target,
+            'description' => $description
+                ?? 'Performance indicator for testing.',
             'weight' => $weight,
-            'measurement_type' => $measurementType,
-            'is_active' => $isActive,
+            'target' => $target,
+            'unit' => $unit,
+            'status' => $status,
         ]);
     }
 
@@ -172,11 +173,9 @@ class PerformanceIndicatorControllerTest extends TestCase
         $indicator = $this->createIndicator(
             name: 'Quality Performance',
             description: 'Quality evaluation indicator.',
-            category: 'Quality',
             target: 100,
             weight: 30,
-            measurementType: 'score',
-            isActive: true,
+            status: 'active',
         );
 
         $response = $this
@@ -193,13 +192,13 @@ class PerformanceIndicatorControllerTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'code',
                         'name',
                         'description',
-                        'category',
-                        'target',
                         'weight',
-                        'measurement_type',
-                        'is_active',
+                        'target',
+                        'unit',
+                        'status',
                         'created_at',
                         'updated_at',
                     ],
@@ -226,11 +225,10 @@ class PerformanceIndicatorControllerTest extends TestCase
         $indicator = $this->createIndicator(
             name: 'Quality Performance',
             description: 'Quality evaluation indicator.',
-            category: 'Quality',
             target: 100,
             weight: 30,
-            measurementType: 'score',
-            isActive: true,
+            unit: 'score',
+            status: 'active',
         );
 
         $response = $this
@@ -256,10 +254,6 @@ class PerformanceIndicatorControllerTest extends TestCase
                 'Quality evaluation indicator.',
             )
             ->assertJsonPath(
-                'data.category',
-                'Quality',
-            )
-            ->assertJsonPath(
                 'data.target',
                 '100.00',
             )
@@ -268,13 +262,13 @@ class PerformanceIndicatorControllerTest extends TestCase
                 '30.00',
             )
             ->assertJsonPath(
-                'data.measurement_type',
+                'data.unit',
                 'score',
             )
             ->assertJsonPath(
-                'data.is_active',
-                true,
-            );
+                'data.status',
+                'active',
+            );;
     }
 
     public function test_returns_404_for_unknown_performance_indicator(): void
@@ -290,12 +284,12 @@ class PerformanceIndicatorControllerTest extends TestCase
     {
         $activeIndicator = $this->createIndicator(
             name: 'Active Indicator',
-            isActive: true,
+            status: 'active',
         );
 
         $this->createIndicator(
             name: 'Inactive Indicator',
-            isActive: false,
+            status: 'inactive',
         );
 
         $response = $this
@@ -312,13 +306,13 @@ class PerformanceIndicatorControllerTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'code',
                         'name',
                         'description',
-                        'category',
-                        'target',
                         'weight',
-                        'measurement_type',
-                        'is_active',
+                        'target',
+                        'unit',
+                        'status',
                         'created_at',
                         'updated_at',
                     ],
@@ -334,12 +328,12 @@ class PerformanceIndicatorControllerTest extends TestCase
     {
         $this->createIndicator(
             name: 'Active Indicator',
-            isActive: true,
+            status: 'active',
         );
 
         $this->createIndicator(
             name: 'Inactive Indicator',
-            isActive: false,
+            status: 'inactive'
         );
 
         $response = $this
@@ -354,8 +348,8 @@ class PerformanceIndicatorControllerTest extends TestCase
                 'Active Indicator',
             )
             ->assertJsonPath(
-                'data.0.is_active',
-                true,
+                'data.0.status',
+                'active',
             );
     }
 
@@ -364,13 +358,13 @@ class PerformanceIndicatorControllerTest extends TestCase
         $response = $this
             ->actingAs($this->user)
             ->postJson('/api/v1/performance/indicators', [
+                'code' => 'PI-001',
                 'name' => 'Quality Performance',
                 'description' => 'Quality evaluation indicator.',
-                'category' => 'Quality',
                 'target' => 100,
                 'weight' => 30,
-                'measurement_type' => 'score',
-                'is_active' => true,
+                'unit' => 'score',
+                'status' => 'active',
             ]);
 
         $response
@@ -378,6 +372,10 @@ class PerformanceIndicatorControllerTest extends TestCase
             ->assertJsonPath(
                 'message',
                 'Performance indicator berhasil dibuat.',
+            )
+            ->assertJsonPath(
+                'data.code',
+                'PI-001',
             )
             ->assertJsonPath(
                 'data.name',
@@ -388,10 +386,6 @@ class PerformanceIndicatorControllerTest extends TestCase
                 'Quality evaluation indicator.',
             )
             ->assertJsonPath(
-                'data.category',
-                'Quality',
-            )
-            ->assertJsonPath(
                 'data.target',
                 '100.00',
             )
@@ -400,45 +394,24 @@ class PerformanceIndicatorControllerTest extends TestCase
                 '30.00',
             )
             ->assertJsonPath(
-                'data.measurement_type',
+                'data.unit',
                 'score',
             )
             ->assertJsonPath(
-                'data.is_active',
-                true,
+                'data.status',
+                'active',
             );
 
         $this->assertDatabaseHas('performance_indicators', [
+            'code' => 'PI-001',
             'name' => 'Quality Performance',
-            'category' => 'Quality',
             'weight' => 30,
-            'measurement_type' => 'score',
-            'is_active' => true,
+            'target' => 100,
+            'unit' => 'score',
+            'status' => 'active',
         ]);
     }
 
-    public function test_uses_default_is_active_when_omitted(): void
-    {
-        $response = $this
-            ->actingAs($this->user)
-            ->postJson('/api/v1/performance/indicators', [
-                'name' => 'Default Active Indicator',
-                'weight' => 20,
-                'measurement_type' => 'score',
-            ]);
-
-        $response
-            ->assertCreated()
-            ->assertJsonPath(
-                'data.is_active',
-                true,
-            );
-
-        $this->assertDatabaseHas('performance_indicators', [
-            'name' => 'Default Active Indicator',
-            'is_active' => true,
-        ]);
-    }
 
     public function test_rejects_missing_name(): void
     {
@@ -460,7 +433,6 @@ class PerformanceIndicatorControllerTest extends TestCase
             ->actingAs($this->user)
             ->postJson('/api/v1/performance/indicators', [
                 'name' => 'Quality Performance',
-                'measurement_type' => 'score',
             ]);
 
         $response
@@ -468,19 +440,6 @@ class PerformanceIndicatorControllerTest extends TestCase
             ->assertJsonValidationErrors(['weight']);
     }
 
-    public function test_rejects_missing_measurement_type(): void
-    {
-        $response = $this
-            ->actingAs($this->user)
-            ->postJson('/api/v1/performance/indicators', [
-                'name' => 'Quality Performance',
-                'weight' => 20,
-            ]);
-
-        $response
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['measurement_type']);
-    }
 
     public function test_rejects_negative_target(): void
     {
@@ -528,31 +487,13 @@ class PerformanceIndicatorControllerTest extends TestCase
             ->assertJsonValidationErrors(['weight']);
     }
 
-    public function test_rejects_invalid_is_active(): void
-    {
-        $response = $this
-            ->actingAs($this->user)
-            ->postJson('/api/v1/performance/indicators', [
-                'name' => 'Invalid Active Status',
-                'weight' => 20,
-                'measurement_type' => 'score',
-                'is_active' => 'invalid',
-            ]);
-
-        $response
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['is_active']);
-    }
-
     public function test_can_update_performance_indicator(): void
     {
         $indicator = $this->createIndicator(
             name: 'Quality Performance',
-            category: 'Quality',
             target: 100,
             weight: 20,
-            measurementType: 'score',
-            isActive: true,
+            status: 'active',
         );
 
         $response = $this
@@ -560,21 +501,21 @@ class PerformanceIndicatorControllerTest extends TestCase
             ->putJson(
                 "/api/v1/performance/indicators/{$indicator->id}",
                 [
+                    'code' => 'PI-002',
                     'name' => 'Updated Quality Performance',
                     'description' => 'Updated description.',
-                    'category' => 'Productivity',
                     'target' => 120,
                     'weight' => 30,
-                    'measurement_type' => 'percentage',
-                    'is_active' => false,
+                    'unit' => 'percentage',
+                    'status' => 'inactive',
                 ],
             );
 
         $response
             ->assertOk()
             ->assertJsonPath(
-                'message',
-                'Performance indicator berhasil diperbarui.',
+                'data.code',
+                'PI-002',
             )
             ->assertJsonPath(
                 'data.name',
@@ -585,10 +526,6 @@ class PerformanceIndicatorControllerTest extends TestCase
                 'Updated description.',
             )
             ->assertJsonPath(
-                'data.category',
-                'Productivity',
-            )
-            ->assertJsonPath(
                 'data.target',
                 '120.00',
             )
@@ -597,19 +534,20 @@ class PerformanceIndicatorControllerTest extends TestCase
                 '30.00',
             )
             ->assertJsonPath(
-                'data.measurement_type',
+                'data.unit',
                 'percentage',
             )
             ->assertJsonPath(
-                'data.is_active',
-                false,
+                'data.status',
+                'inactive',
             );
 
         $this->assertDatabaseHas('performance_indicators', [
             'id' => $indicator->id,
+            'code' => 'PI-002',
             'name' => 'Updated Quality Performance',
             'weight' => 30,
-            'is_active' => false,
+            'status' => 'inactive',
         ]);
     }
 
@@ -617,11 +555,9 @@ class PerformanceIndicatorControllerTest extends TestCase
     {
         $indicator = $this->createIndicator(
             name: 'Quality Performance',
-            category: 'Quality',
             target: 100,
             weight: 20,
-            measurementType: 'score',
-            isActive: true,
+            status: 'active',
         );
 
         $response = $this
@@ -640,8 +576,8 @@ class PerformanceIndicatorControllerTest extends TestCase
                 'Patched Performance Indicator',
             )
             ->assertJsonPath(
-                'data.category',
-                'Quality',
+                'data.code',
+                $indicator->code,
             )
             ->assertJsonPath(
                 'data.target',
@@ -652,12 +588,12 @@ class PerformanceIndicatorControllerTest extends TestCase
                 '20.00',
             )
             ->assertJsonPath(
-                'data.measurement_type',
-                'score',
+                'data.unit',
+                $indicator->unit,
             )
             ->assertJsonPath(
-                'data.is_active',
-                true,
+                'data.status',
+                'active',
             );
     }
 
@@ -695,24 +631,6 @@ class PerformanceIndicatorControllerTest extends TestCase
         $response
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['target']);
-    }
-
-    public function test_rejects_invalid_update_status(): void
-    {
-        $indicator = $this->createIndicator();
-
-        $response = $this
-            ->actingAs($this->user)
-            ->putJson(
-                "/api/v1/performance/indicators/{$indicator->id}",
-                [
-                    'is_active' => 'invalid',
-                ],
-            );
-
-        $response
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['is_active']);
     }
 
     public function test_can_search_performance_indicator_by_name(): void
@@ -769,49 +687,23 @@ class PerformanceIndicatorControllerTest extends TestCase
             );
     }
 
-    public function test_can_filter_performance_indicator_by_category(): void
-    {
-        $this->createIndicator(
-            name: 'Quality Indicator',
-            category: 'Quality',
-        );
-
-        $this->createIndicator(
-            name: 'Productivity Indicator',
-            category: 'Productivity',
-        );
-
-        $response = $this
-            ->actingAs($this->user)
-            ->getJson('/api/v1/performance/indicators?category=Quality');
-
-        $response
-            ->assertOk()
-            ->assertJsonPath(
-                'meta.pagination.total',
-                1,
-            )
-            ->assertJsonPath(
-                'data.0.name',
-                'Quality Indicator',
-            );
-    }
-
-    public function test_can_filter_active_performance_indicators(): void
+    public function test_can_filter_performance_indicator_by_status(): void
     {
         $this->createIndicator(
             name: 'Active Indicator',
-            isActive: true,
+            status: 'active',
         );
 
         $this->createIndicator(
             name: 'Inactive Indicator',
-            isActive: false,
+            status: 'inactive',
         );
 
         $response = $this
             ->actingAs($this->user)
-            ->getJson('/api/v1/performance/indicators?is_active=true');
+            ->getJson(
+                '/api/v1/performance/indicators?status=active',
+            );
 
         $response
             ->assertOk()
@@ -824,40 +716,8 @@ class PerformanceIndicatorControllerTest extends TestCase
                 'Active Indicator',
             )
             ->assertJsonPath(
-                'data.0.is_active',
-                true,
-            );
-    }
-
-    public function test_can_filter_inactive_performance_indicators(): void
-    {
-        $this->createIndicator(
-            name: 'Active Indicator',
-            isActive: true,
-        );
-
-        $this->createIndicator(
-            name: 'Inactive Indicator',
-            isActive: false,
-        );
-
-        $response = $this
-            ->actingAs($this->user)
-            ->getJson('/api/v1/performance/indicators?is_active=false');
-
-        $response
-            ->assertOk()
-            ->assertJsonPath(
-                'meta.pagination.total',
-                1,
-            )
-            ->assertJsonPath(
-                'data.0.name',
-                'Inactive Indicator',
-            )
-            ->assertJsonPath(
-                'data.0.is_active',
-                false,
+                'data.0.status',
+                'active',
             );
     }
 

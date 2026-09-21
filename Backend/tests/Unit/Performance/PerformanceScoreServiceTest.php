@@ -92,26 +92,26 @@ class PerformanceScoreServiceTest extends TestCase
             'employee_id' => $employee->id,
             'performance_period_id' => $period->id,
             'reviewer_id' => $user->id,
-            'review_type' => 'annual',
             'status' => 'draft',
             'overall_score' => null,
-            'review_date' => '2026-12-01',
+            'reviewed_at' => '2026-12-01 00:00:00',
             'comments' => 'Test review.',
         ]);
     }
 
     private function createIndicator(
-        float $weight,
-        string $name = 'Performance Indicator'
+        float $weight = 20,
+        string $name = 'Quality',
+        bool $isActive = true,
     ): PerformanceIndicator {
         return PerformanceIndicator::query()->create([
-            'name' => $name . ' ' . uniqid(),
+            'code' => 'KPI-' . strtoupper(uniqid()),
+            'name' => $name,
             'description' => 'Test performance indicator.',
-            'category' => 'Performance',
             'target' => 100,
             'weight' => $weight,
-            'measurement_type' => 'score',
-            'is_active' => true,
+            'unit' => 'score',
+            'status' => $isActive ? 'active' : 'inactive',
         ]);
     }
 
@@ -120,10 +120,10 @@ class PerformanceScoreServiceTest extends TestCase
         PerformanceIndicator $indicator,
         ?float $score
     ): void {
-        $review->items()->create([
+        $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator->id,
             'score' => $score,
-            'comment' => 'Test score.',
+            'comments' => 'Test score.',
         ]);
     }
 

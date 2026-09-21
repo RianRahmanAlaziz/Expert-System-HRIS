@@ -124,7 +124,7 @@ class PerformanceHistoryControllerTest extends TestCase
         ?PerformancePeriod $period = null,
         ?User $reviewer = null,
         string $status = 'approved',
-        ?string $reviewDate = '2026-02-15',
+        ?string $reviewedAt = '2026-02-15 00:00:00',
         ?string $overallScore = '85.00',
         ?string $comments = null,
     ): PerformanceReview {
@@ -136,10 +136,9 @@ class PerformanceHistoryControllerTest extends TestCase
             'employee_id' => $employee->id,
             'performance_period_id' => $period->id,
             'reviewer_id' => $reviewer->id,
-            'review_type' => 'manager',
             'status' => $status,
             'overall_score' => $overallScore,
-            'review_date' => $reviewDate,
+            'reviewed_at' => $reviewedAt,
             'comments' => $comments ?? 'Test performance review.',
         ]);
     }
@@ -215,7 +214,7 @@ class PerformanceHistoryControllerTest extends TestCase
             period: $period,
             status: 'approved',
             overallScore: '85.00',
-            reviewDate: '2026-03-15',
+            reviewedAt: '2026-03-15 00:00:00',
             comments: 'Excellent performance.',
         );
 
@@ -248,10 +247,9 @@ class PerformanceHistoryControllerTest extends TestCase
                         'reviewer' => [
                             'id',
                         ],
-                        'review_type',
                         'status',
                         'overall_score',
-                        'review_date',
+                        'reviewed_at',
                         'comments',
                     ],
                 ],
@@ -307,8 +305,8 @@ class PerformanceHistoryControllerTest extends TestCase
                 '85.00',
             )
             ->assertJsonPath(
-                'data.0.review_date',
-                '2026-03-15',
+                'data.0.reviewed_at',
+                '2026-03-14T17:00:00.000000Z',
             )
             ->assertJsonPath(
                 'data.0.comments',
@@ -318,35 +316,35 @@ class PerformanceHistoryControllerTest extends TestCase
 
     public function test_only_approved_reviews_are_in_history(): void
     {
-        $employee = $this->createEmployee();
         $period = $this->createPeriod();
 
+        $approvedEmployee = $this->createEmployee();
+        $draftEmployee = $this->createEmployee();
+        $submittedEmployee = $this->createEmployee();
+        $rejectedEmployee = $this->createEmployee();
+
         $approvedReview = $this->createReview(
-            employee: $employee,
+            employee: $approvedEmployee,
             period: $period,
             status: 'approved',
-            reviewDate: '2026-03-15',
         );
 
         $this->createReview(
-            employee: $employee,
+            employee: $draftEmployee,
             period: $period,
             status: 'draft',
-            reviewDate: '2026-03-14',
         );
 
         $this->createReview(
-            employee: $employee,
+            employee: $submittedEmployee,
             period: $period,
             status: 'submitted',
-            reviewDate: '2026-03-13',
         );
 
         $this->createReview(
-            employee: $employee,
+            employee: $rejectedEmployee,
             period: $period,
             status: 'rejected',
-            reviewDate: '2026-03-12',
         );
 
         $response = $this->actingAs($this->user)
@@ -394,15 +392,16 @@ class PerformanceHistoryControllerTest extends TestCase
 
     public function test_can_paginate_performance_history(): void
     {
-        $employee = $this->createEmployee();
         $period = $this->createPeriod();
 
         for ($i = 1; $i <= 16; $i++) {
+            $employee = $this->createEmployee();
+
             $this->createReview(
                 employee: $employee,
                 period: $period,
-                reviewDate: sprintf(
-                    '2026-03-%02d',
+                reviewedAt: sprintf(
+                    '2026-03-%02d 00:00:00',
                     $i,
                 ),
                 comments: "History {$i}",
@@ -445,15 +444,16 @@ class PerformanceHistoryControllerTest extends TestCase
 
     public function test_uses_default_pagination_for_history(): void
     {
-        $employee = $this->createEmployee();
         $period = $this->createPeriod();
 
         for ($i = 1; $i <= 16; $i++) {
+            $employee = $this->createEmployee();
+
             $this->createReview(
                 employee: $employee,
                 period: $period,
-                reviewDate: sprintf(
-                    '2026-03-%02d',
+                reviewedAt: sprintf(
+                    '2026-03-%02d 00:00:00',
                     $i,
                 ),
             );
@@ -539,18 +539,25 @@ class PerformanceHistoryControllerTest extends TestCase
     public function test_history_is_sorted_by_review_date_descending(): void
     {
         $employee = $this->createEmployee();
-        $period = $this->createPeriod();
+
+        $olderPeriod = $this->createPeriod(
+            name: 'Q1 2026',
+        );
+
+        $newerPeriod = $this->createPeriod(
+            name: 'Q2 2026',
+        );
 
         $olderReview = $this->createReview(
             employee: $employee,
-            period: $period,
-            reviewDate: '2026-01-15',
+            period: $olderPeriod,
+            reviewedAt: '2026-01-15 00:00:00',
         );
 
         $newerReview = $this->createReview(
             employee: $employee,
-            period: $period,
-            reviewDate: '2026-03-15',
+            period: $newerPeriod,
+            reviewedAt: '2026-03-15 00:00:00',
         );
 
         $response = $this->actingAs($this->user)
@@ -619,14 +626,17 @@ class PerformanceHistoryControllerTest extends TestCase
     public function test_can_paginate_history_for_specific_employee(): void
     {
         $employee = $this->createEmployee();
-        $period = $this->createPeriod();
 
         for ($i = 1; $i <= 16; $i++) {
+            $period = $this->createPeriod(
+                name: "Performance Period {$i}",
+            );
+
             $this->createReview(
                 employee: $employee,
                 period: $period,
-                reviewDate: sprintf(
-                    '2026-03-%02d',
+                reviewedAt: sprintf(
+                    '2026-03-%02d 00:00:00',
                     $i,
                 ),
             );

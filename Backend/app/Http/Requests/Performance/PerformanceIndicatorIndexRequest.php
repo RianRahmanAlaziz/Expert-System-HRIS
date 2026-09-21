@@ -11,27 +11,6 @@ class PerformanceIndicatorIndexRequest extends FormRequest
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if (! $this->has('is_active')) {
-            return;
-        }
-
-        $isActive = $this->query('is_active');
-
-        if ($isActive === 'true') {
-            $this->merge([
-                'is_active' => true,
-            ]);
-        }
-
-        if ($isActive === 'false') {
-            $this->merge([
-                'is_active' => false,
-            ]);
-        }
-    }
-
     public function rules(): array
     {
         return [
@@ -45,9 +24,10 @@ class PerformanceIndicatorIndexRequest extends FormRequest
                 'string',
                 'max:50',
             ],
-            'is_active' => [
+            'status' => [
                 'nullable',
-                'boolean',
+                'string',
+                'max:30',
             ],
             'per_page' => [
                 'nullable',
@@ -63,12 +43,8 @@ class PerformanceIndicatorIndexRequest extends FormRequest
         return [
             'search.string' => 'Pencarian indikator performance harus berupa teks.',
             'search.max' => 'Pencarian indikator performance maksimal 100 karakter.',
-
-            'category.string' => 'Kategori indikator harus berupa teks.',
-            'category.max' => 'Kategori indikator maksimal 50 karakter.',
-
-            'is_active.boolean' => 'Status aktif harus berupa true atau false.',
-
+            'status.string' => 'Status indikator harus berupa teks.',
+            'status.max' => 'Status indikator maksimal 30 karakter.',
             'per_page.integer' => 'Jumlah data per halaman harus berupa angka.',
             'per_page.min' => 'Jumlah data per halaman minimal 1.',
             'per_page.max' => 'Jumlah data per halaman maksimal 100.',

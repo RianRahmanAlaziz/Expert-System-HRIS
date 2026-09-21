@@ -20,7 +20,7 @@ class PerformanceReviewItemService
         PerformanceReview $review,
         int $perPage = 15,
     ): LengthAwarePaginator {
-        return $review->items()
+        return $review->performanceReviewItems()
             ->with('indicator')
             ->latest('id')
             ->paginate($perPage);
@@ -44,11 +44,13 @@ class PerformanceReviewItemService
             $data['performance_indicator_id']
         );
 
-        if (!$indicator->is_active) {
-            throw new InvalidArgumentException('Performance indicator yang dipilih tidak aktif.');
+        if ($indicator->status !== 'active') {
+            throw new InvalidArgumentException(
+                'Performance indicator yang dipilih tidak aktif.'
+            );
         }
 
-        $exists = $review->items()
+        $exists = $review->performanceReviewItems()
             ->where(
                 'performance_indicator_id',
                 $indicator->id
@@ -60,7 +62,7 @@ class PerformanceReviewItemService
         }
 
         return DB::transaction(function () use ($review, $data) {
-            $item = $review->items()->create($data);
+            $item = $review->performanceReviewItems()->create($data);
 
             $this->activityLogService->log(
                 action: 'create',
@@ -97,12 +99,13 @@ class PerformanceReviewItemService
                 $data['performance_indicator_id']
             );
 
-            if (!$indicator->is_active) {
-                throw new InvalidArgumentException('Performance indicator yang dipilih tidak aktif.');
+            if ($indicator->status !== 'active') {
+                throw new InvalidArgumentException(
+                    'Performance indicator yang dipilih tidak aktif.'
+                );
             }
 
-            $exists = $item->review
-                ->items()
+            $exists = $item->review->performanceReviewItems()
                 ->where(
                     'performance_indicator_id',
                     $indicator->id

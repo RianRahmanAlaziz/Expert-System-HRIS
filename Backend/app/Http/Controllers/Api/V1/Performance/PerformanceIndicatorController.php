@@ -41,15 +41,12 @@ class PerformanceIndicatorController extends Controller implements HasMiddleware
             (string) $request->query('search', ''),
         );
 
-        $isActive = $request->has('is_active')
-            ? $request->boolean('is_active')
-            : null;
+        $status = $request->query('status');
 
         $indicators = $this->performanceIndicatorService->paginate(
             perPage: $perPage,
             search: $search,
-            category: $request->query('category'),
-            isActive: $isActive,
+            status: $status,
         );
 
         return ApiResponse::success(

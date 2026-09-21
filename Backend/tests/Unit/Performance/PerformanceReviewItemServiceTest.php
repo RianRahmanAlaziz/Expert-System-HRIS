@@ -121,13 +121,13 @@ class PerformanceReviewItemServiceTest extends TestCase
         bool $isActive = true
     ): PerformanceIndicator {
         return PerformanceIndicator::query()->create([
+            'code' => 'KPI-' . strtoupper(uniqid()),
             'name' => 'Indicator ' . uniqid(),
             'description' => 'Test performance indicator.',
-            'category' => 'Performance',
             'target' => 100,
             'weight' => 20,
-            'measurement_type' => 'score',
-            'is_active' => $isActive,
+            'unit' => 'score',
+            'status' => $isActive ? 'active' : 'inactive',
         ]);
     }
 
@@ -138,16 +138,16 @@ class PerformanceReviewItemServiceTest extends TestCase
         $indicator1 = $this->createIndicator();
         $indicator2 = $this->createIndicator();
 
-        $review->items()->create([
+        $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator1->id,
             'score' => 80,
-            'comment' => 'Good performance.',
+            'comments' => 'Good performance.',
         ]);
 
-        $review->items()->create([
+        $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator2->id,
             'score' => 90,
-            'comment' => 'Very good performance.',
+            'comments' => 'Very good performance.',
         ]);
 
         $result = $this->performanceReviewItemService->paginateByReview(
@@ -186,10 +186,10 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $indicator = $this->createIndicator();
 
-        $item = $review->items()->create([
+        $item = $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator->id,
             'score' => 85,
-            'comment' => 'Good performance.',
+            'comments' => 'Good performance.',
         ]);
 
         $result = $this->performanceReviewItemService->getById(
@@ -227,7 +227,7 @@ class PerformanceReviewItemServiceTest extends TestCase
             [
                 'performance_indicator_id' => $indicator->id,
                 'score' => 90,
-                'comment' => 'Excellent performance.',
+                'comments' => 'Excellent performance.',
             ]
         );
 
@@ -253,7 +253,7 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $this->assertSame(
             'Excellent performance.',
-            $item->comment
+            $item->comments
         );
 
         $this->assertTrue(
@@ -267,7 +267,7 @@ class PerformanceReviewItemServiceTest extends TestCase
                 'performance_review_id' => $review->id,
                 'performance_indicator_id' => $indicator->id,
                 'score' => 90,
-                'comment' => 'Excellent performance.',
+                'comments' => 'Excellent performance.',
             ]
         );
     }
@@ -324,10 +324,10 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $indicator = $this->createIndicator();
 
-        $review->items()->create([
+        $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator->id,
             'score' => 80,
-            'comment' => 'Existing item.',
+            'comments' => 'Existing item.',
         ]);
 
         $this->expectException(
@@ -343,7 +343,7 @@ class PerformanceReviewItemServiceTest extends TestCase
             [
                 'performance_indicator_id' => $indicator->id,
                 'score' => 90,
-                'comment' => 'Duplicate item.',
+                'comments' => 'Duplicate item.',
             ]
         );
     }
@@ -354,17 +354,17 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $indicator = $this->createIndicator();
 
-        $item = $review->items()->create([
+        $item = $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator->id,
             'score' => 70,
-            'comment' => 'Initial comment.',
+            'comments' => 'Initial comment.',
         ]);
 
         $result = $this->performanceReviewItemService->update(
             $item,
             [
                 'score' => 90,
-                'comment' => 'Updated comment.',
+                'comments' => 'Updated comment.',
             ]
         );
 
@@ -380,7 +380,7 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $this->assertSame(
             'Updated comment.',
-            $result->comment
+            $result->comments
         );
 
         $this->assertSame(
@@ -397,7 +397,7 @@ class PerformanceReviewItemServiceTest extends TestCase
             [
                 'id' => $item->id,
                 'score' => 90,
-                'comment' => 'Updated comment.',
+                'comments' => 'Updated comment.',
             ]
         );
     }
@@ -408,15 +408,13 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $indicator = $this->createIndicator();
 
-        $item = $review->items()->create([
+        $item = $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator->id,
             'score' => 80,
-            'comment' => 'Initial comment.',
+            'comments' => 'Initial comment.',
         ]);
 
-        $this->expectException(
-            InvalidArgumentException::class
-        );
+        $this->expectException(InvalidArgumentException::class);
 
         $this->expectExceptionMessage(
             'Performance review yang sudah approved tidak dapat diubah.'
@@ -437,10 +435,10 @@ class PerformanceReviewItemServiceTest extends TestCase
         $indicator1 = $this->createIndicator();
         $indicator2 = $this->createIndicator();
 
-        $item = $review->items()->create([
+        $item = $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator1->id,
             'score' => 80,
-            'comment' => 'Initial comment.',
+            'comments' => 'Initial comment.',
         ]);
 
         $result = $this->performanceReviewItemService->update(
@@ -480,10 +478,10 @@ class PerformanceReviewItemServiceTest extends TestCase
         $activeIndicator = $this->createIndicator();
         $inactiveIndicator = $this->createIndicator(false);
 
-        $item = $review->items()->create([
+        $item = $review->performanceReviewItems()->create([
             'performance_indicator_id' => $activeIndicator->id,
             'score' => 80,
-            'comment' => 'Initial comment.',
+            'comments' => 'Initial comment.',
         ]);
 
         $this->expectException(
@@ -509,16 +507,16 @@ class PerformanceReviewItemServiceTest extends TestCase
         $indicator1 = $this->createIndicator();
         $indicator2 = $this->createIndicator();
 
-        $item = $review->items()->create([
+        $item = $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator1->id,
             'score' => 80,
-            'comment' => 'Initial comment.',
+            'comments' => 'Initial comment.',
         ]);
 
-        $review->items()->create([
+        $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator2->id,
             'score' => 90,
-            'comment' => 'Existing item.',
+            'comments' => 'Existing item.',
         ]);
 
         $this->expectException(
@@ -543,10 +541,10 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $indicator = $this->createIndicator();
 
-        $item = $review->items()->create([
+        $item = $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator->id,
             'score' => 80,
-            'comment' => 'To be deleted.',
+            'comments' => 'To be deleted.',
         ]);
 
         $this->performanceReviewItemService->delete(
@@ -567,19 +565,15 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $indicator = $this->createIndicator();
 
-        $item = $review->items()->create([
+        $item = $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator->id,
             'score' => 80,
-            'comment' => 'Cannot be deleted.',
+            'comments' => 'Cannot be deleted.',
         ]);
 
-        $this->expectException(
-            InvalidArgumentException::class
-        );
+        $this->expectException(InvalidArgumentException::class);
 
-        $this->expectExceptionMessage(
-            'Performance review yang sudah approved tidak dapat diubah.'
-        );
+        $this->expectExceptionMessage('Performance review yang sudah approved tidak dapat diubah.');
 
         $this->performanceReviewItemService->delete(
             $item
@@ -603,7 +597,7 @@ class PerformanceReviewItemServiceTest extends TestCase
             [
                 'performance_indicator_id' => $indicator->id,
                 'score' => 90,
-                'comment' => 'Excellent performance.',
+                'comments' => 'Excellent performance.',
             ]
         );
 
@@ -632,7 +626,7 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $this->assertEquals(
             'Excellent performance.',
-            $log->new_values['comment']
+            $log->new_values['comments']
         );
     }
 
@@ -642,17 +636,17 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $indicator = $this->createIndicator();
 
-        $item = $review->items()->create([
+        $item = $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator->id,
             'score' => 70,
-            'comment' => 'Initial comment.',
+            'comments' => 'Initial comment.',
         ]);
 
         $this->performanceReviewItemService->update(
             $item,
             [
                 'score' => 90,
-                'comment' => 'Updated comment.',
+                'comments' => 'Updated comment.',
             ]
         );
 
@@ -671,7 +665,7 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $this->assertEquals(
             'Initial comment.',
-            $log->old_values['comment']
+            $log->old_values['comments']
         );
 
         $this->assertEquals(
@@ -681,7 +675,7 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $this->assertEquals(
             'Updated comment.',
-            $log->new_values['comment']
+            $log->new_values['comments']
         );
     }
 
@@ -691,10 +685,10 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $indicator = $this->createIndicator();
 
-        $item = $review->items()->create([
+        $item = $review->performanceReviewItems()->create([
             'performance_indicator_id' => $indicator->id,
             'score' => 80,
-            'comment' => 'To be deleted.',
+            'comments' => 'To be deleted.',
         ]);
 
         $itemId = $item->id;
@@ -726,7 +720,7 @@ class PerformanceReviewItemServiceTest extends TestCase
 
         $this->assertEquals(
             'To be deleted.',
-            $log->old_values['comment']
+            $log->old_values['comments']
         );
     }
 }

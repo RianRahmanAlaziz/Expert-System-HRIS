@@ -44,7 +44,7 @@ class PerformanceReview extends Model
         return $this->belongsTo(User::class, 'reviewer_id');
     }
 
-    public function items(): HasMany
+    public function performanceReviewItems(): HasMany
     {
         return $this->hasMany(PerformanceReviewItem::class, 'performance_review_id');
     }

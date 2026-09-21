@@ -18,7 +18,6 @@ class PerformanceReportService
         return [
             'summary' => $this->summary($reviews),
             'by_department' => $this->byDepartment($reviews),
-            'by_review_type' => $this->byReviewType($reviews),
             'by_period' => $this->byPeriod($reviews),
         ];
     }
@@ -59,13 +58,6 @@ class PerformanceReportService
                 );
             });
         }
-
-        if (!empty($filters['review_type'])) {
-            $query->where(
-                'review_type',
-                $filters['review_type']
-            );
-        }
     }
 
     private function summary($reviews): array
@@ -79,9 +71,7 @@ class PerformanceReportService
                 ->count(),
 
             'average_score' => $reviews->avg('overall_score'),
-
             'highest_score' => $reviews->max('overall_score'),
-
             'lowest_score' => $reviews->min('overall_score'),
         ];
     }
@@ -107,23 +97,6 @@ class PerformanceReportService
                         ->unique()
                         ->count(),
                     'average_score' => $departmentReviews->avg(
-                        'overall_score'
-                    ),
-                ];
-            })
-            ->values()
-            ->all();
-    }
-
-    private function byReviewType($reviews): array
-    {
-        return $reviews
-            ->groupBy('review_type')
-            ->map(function ($typeReviews, $reviewType) {
-                return [
-                    'review_type' => $reviewType,
-                    'total_reviews' => $typeReviews->count(),
-                    'average_score' => $typeReviews->avg(
                         'overall_score'
                     ),
                 ];

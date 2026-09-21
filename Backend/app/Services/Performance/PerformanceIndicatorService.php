@@ -16,8 +16,7 @@ class PerformanceIndicatorService
     public function paginate(
         int $perPage = 15,
         string $search = '',
-        ?string $category = null,
-        ?bool $isActive = null,
+        ?string $status = null,
     ): LengthAwarePaginator {
         return PerformanceIndicator::query()
             ->when(
@@ -31,12 +30,8 @@ class PerformanceIndicatorService
                 },
             )
             ->when(
-                $category !== null,
-                fn($query) => $query->where('category', $category),
-            )
-            ->when(
-                $isActive !== null,
-                fn($query) => $query->where('is_active', $isActive),
+                $status !== null,
+                fn($query) => $query->where('status', $status),
             )
             ->latest('id')
             ->paginate($perPage);
@@ -44,7 +39,7 @@ class PerformanceIndicatorService
 
     public function getActive(): Collection
     {
-        return PerformanceIndicator::query()->where('is_active', true)->latest()->get();
+        return PerformanceIndicator::query()->where('status', 'active')->latest()->get();
     }
 
     public function getById(int $id): PerformanceIndicator
@@ -61,13 +56,13 @@ class PerformanceIndicatorService
             module: 'performance_indicator',
             target: $indicator,
             newValues: [
+                'code' => $indicator->code,
                 'name' => $indicator->name,
                 'description' => $indicator->description,
-                'category' => $indicator->category,
-                'target' => $indicator->target,
                 'weight' => $indicator->weight,
-                'measurement_type' => $indicator->measurement_type,
-                'is_active' => $indicator->is_active,
+                'target' => $indicator->target,
+                'unit' => $indicator->unit,
+                'status' => $indicator->status,
             ],
         );
 
@@ -79,13 +74,13 @@ class PerformanceIndicatorService
         array $data
     ): PerformanceIndicator {
         $oldValues = [
+            'code' => $indicator->code,
             'name' => $indicator->name,
             'description' => $indicator->description,
-            'category' => $indicator->category,
-            'target' => $indicator->target,
             'weight' => $indicator->weight,
-            'measurement_type' => $indicator->measurement_type,
-            'is_active' => $indicator->is_active,
+            'target' => $indicator->target,
+            'unit' => $indicator->unit,
+            'status' => $indicator->status,
         ];
 
         $indicator->update($data);
@@ -98,13 +93,13 @@ class PerformanceIndicatorService
             target: $indicator,
             oldValues: $oldValues,
             newValues: [
+                'code' => $indicator->code,
                 'name' => $indicator->name,
                 'description' => $indicator->description,
-                'category' => $indicator->category,
-                'target' => $indicator->target,
                 'weight' => $indicator->weight,
-                'measurement_type' => $indicator->measurement_type,
-                'is_active' => $indicator->is_active,
+                'target' => $indicator->target,
+                'unit' => $indicator->unit,
+                'status' => $indicator->status,
             ],
         );
 
@@ -120,11 +115,11 @@ class PerformanceIndicatorService
             oldValues: [
                 'name' => $indicator->name,
                 'description' => $indicator->description,
-                'category' => $indicator->category,
+                'code' => $indicator->code,
                 'target' => $indicator->target,
                 'weight' => $indicator->weight,
-                'measurement_type' => $indicator->measurement_type,
-                'is_active' => $indicator->is_active,
+                'unit' => $indicator->unit,
+                'status' => $indicator->status,
             ],
         );
 

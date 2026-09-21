@@ -25,7 +25,7 @@ class StorePerformanceReviewItemRequest extends FormRequest
                 'min:0',
                 'max:100',
             ],
-            'comment' => [
+            'comments' => [
                 'nullable',
                 'string',
             ],

@@ -15,13 +15,13 @@ class PerformanceScoreService
      */
     public function calculate(PerformanceReview $review): float
     {
-        $review->loadMissing('items.indicator');
+        $review->loadMissing('performanceReviewItems.indicator');
 
-        if ($review->items->isEmpty()) {
+        if ($review->performanceReviewItems->isEmpty()) {
             throw new InvalidArgumentException('Performance review belum memiliki indikator.');
         }
 
-        $totalWeight = $review->items->sum(
+        $totalWeight = $review->performanceReviewItems->sum(
             fn($item) => (float) $item->indicator->weight
         );
 
@@ -29,7 +29,7 @@ class PerformanceScoreService
             throw new InvalidArgumentException('Total bobot indikator performance harus 100%.');
         }
 
-        $overallScore = $review->items->sum(
+        $overallScore = $review->performanceReviewItems->sum(
             function ($item) {
                 $score = (float) ($item->score ?? 0);
                 $weight = (float) $item->indicator->weight;
