@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Performance;
+namespace App\Feature\Performance;
 
 use App\Models\Department;
 use App\Models\Employee;

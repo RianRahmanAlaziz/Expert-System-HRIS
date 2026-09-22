@@ -202,7 +202,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('rule-conditions',   RuleConditionController::class);
     Route::apiResource('rule-actions',  RuleActionController::class);
 
-    // Consulation
+    // Consultation
     Route::apiResource('expert-consultations',   ExpertConsultationController::class)->only([
         'index',
         'store',

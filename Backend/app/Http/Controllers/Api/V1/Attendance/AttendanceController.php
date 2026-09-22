@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Attendance\AttendanceIndexRequest;
 use App\Http\Requests\Attendance\AttendanceReportRequest;
 use App\Http\Resources\V1\Attendance\AttendanceResource;
+use App\Http\Resources\V1\Dashboard\AttendanceReportResource;
 use App\Models\Attendance;
 use App\Models\User;
 use App\Services\Attendance\AttendanceService;
@@ -159,7 +160,7 @@ class AttendanceController extends Controller implements HasMiddleware
         );
 
         return ApiResponse::success(
-            data: $report,
+            data: AttendanceReportResource::collection($report),
             message: 'Attendance report berhasil diambil.',
         );
     }
